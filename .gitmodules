@@ -1,0 +1,4 @@
+[submodule "src/shared/types/common"]
+	path = src/shared/types/common
+	url = https://github.com/pokerluludev/game_submodules.git
+	branch = common

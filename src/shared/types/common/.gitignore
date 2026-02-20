@@ -1,0 +1,5 @@
+/*.meta
+/common/*.meta
+/packets/*.meta
+/packets/centerServer/*.meta
+/packets/gameServer/*.meta
