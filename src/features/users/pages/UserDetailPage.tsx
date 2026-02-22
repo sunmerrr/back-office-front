@@ -5,7 +5,7 @@ import { Button } from '@/shared/components/ui/button'
 import { Badge } from '@/shared/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/components/ui/tabs'
 import { Card, CardContent } from '@/shared/components/ui/card'
-import { 
+import {
   Dialog,
   DialogContent,
   DialogHeader,
@@ -32,14 +32,17 @@ import { UserGoldTab } from '../components/UserGoldTab'
 import { UserTicketsTab } from '../components/UserTicketsTab'
 import { UserSendTab } from '../components/UserSendTab'
 import { UserPaymentsTab } from '../components/UserPaymentsTab'
+import { UserDiamondTab } from '../components/UserDiamondTab'
+import { BanUserDialog } from '../components/BanUserDialog'
 
 export const UserDetailPage: FC = () => {
   const { userId } = useParams({ from: '/_auth/users/$userId' })
   const navigate = useNavigate()
-  
+
   const [isEditOpen, setIsEditOpen] = useState(false)
   const [selectedRole, setSelectedRole] = useState<string>('')
-  
+  const [isBanDialogOpen, setIsBanDialogOpen] = useState(false)
+
   const { data: user, isLoading: isUserLoading, error: userError } = useUser(userId)
   const { mutate: updateRole, isPending: isUpdatingRole } = useUpdateUserRole()
   const { mutate: banUser, isPending: isBanning } = useBanUser()
@@ -60,20 +63,13 @@ export const UserDetailPage: FC = () => {
     setIsEditOpen(false)
   }
 
-  const handleBan = () => {
-    const daysStr = window.prompt('차단할 기간(일)을 입력하세요:', '30')
-    if (!daysStr) return
-
-    const days = parseInt(daysStr, 10)
-    if (isNaN(days) || days <= 0) {
-      alert('유효한 숫자를 입력해주세요.')
-      return
-    }
-
-    const bannedUntil = new Date().getTime() + days * 24 * 60 * 60 * 1000
-    if (window.confirm(`${days}일 동안 사용자를 차단하시겠습니까?`)) {
-      banUser({ id: userId, bannedUntil })
-    }
+  const handleBanConfirm = (bannedUntil: number | undefined, reason: string) => {
+    banUser(
+      { id: userId, bannedUntil, reason },
+      {
+        onSuccess: () => setIsBanDialogOpen(false),
+      },
+    )
   }
 
   const handleUnban = () => {
@@ -83,6 +79,17 @@ export const UserDetailPage: FC = () => {
   }
 
   const isActionPending = isUpdatingRole || isBanning || isUnbanning
+
+  const getBanStatusBadge = () => {
+    if (!user.banned) {
+      return <Badge className="bg-green-100 text-green-800 border-none">정상</Badge>
+    }
+    if (user.bannedUntil && user.bannedUntil > 0) {
+      const until = new Date(user.bannedUntil).toLocaleDateString('ko-KR')
+      return <Badge variant="destructive">차단됨 (~{until})</Badge>
+    }
+    return <Badge variant="destructive">영구차단</Badge>
+  }
 
   return (
     <div className="p-6 space-y-6 max-w-7xl mx-auto">
@@ -99,11 +106,7 @@ export const UserDetailPage: FC = () => {
               <h1 className="text-2xl font-bold">{user.userName}</h1>
               <div className="flex gap-2 mt-1">
                 <Badge variant="outline">{user.role}</Badge>
-                {user.banned ? (
-                  <Badge variant="destructive">차단됨</Badge>
-                ) : (
-                  <Badge className="bg-green-100 text-green-800 border-none">정상</Badge>
-                )}
+                {getBanStatusBadge()}
               </div>
             </div>
           </div>
@@ -143,46 +146,59 @@ export const UserDetailPage: FC = () => {
             </Dialog>
           </PermissionGate>
 
-          {user.banned ? (
-            <Button 
-              variant="outline" 
-              className="text-green-600 border-green-600"
-              onClick={handleUnban}
-              disabled={isActionPending}
-            >
-              차단 해제
-            </Button>
-          ) : (
-            <Button 
-              variant="destructive"
-              onClick={handleBan}
-              disabled={isActionPending}
-            >
-              회원 차단
-            </Button>
-          )}
+          <PermissionGate permission="user:ban">
+            {user.banned ? (
+              <Button
+                variant="outline"
+                className="text-green-600 border-green-600"
+                onClick={handleUnban}
+                disabled={isActionPending}
+              >
+                차단 해제
+              </Button>
+            ) : (
+              <>
+                <Button
+                  variant="destructive"
+                  onClick={() => setIsBanDialogOpen(true)}
+                  disabled={isActionPending}
+                >
+                  회원 차단
+                </Button>
+                <BanUserDialog
+                  open={isBanDialogOpen}
+                  onOpenChange={setIsBanDialogOpen}
+                  userId={userId}
+                  userName={user.userName}
+                  onConfirm={handleBanConfirm}
+                  isPending={isBanning}
+                />
+              </>
+            )}
+          </PermissionGate>
         </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="md:col-span-1 space-y-6">
           <UserProfileCard user={user} />
-          <UserAssetsCard userId={userId} />
+          <UserAssetsCard userId={userId} userName={user.userName} />
           <UserMemoCard />
         </div>
 
         <div className="md:col-span-2">
           <Tabs defaultValue="gold" className="w-full">
-            <TabsList className="grid w-full grid-cols-7">
+            <TabsList className="grid w-full grid-cols-8">
               <TabsTrigger value="overview">개요</TabsTrigger>
               <TabsTrigger value="gold">골드 내역</TabsTrigger>
+              <TabsTrigger value="diamond">다이아 내역</TabsTrigger>
               <TabsTrigger value="tickets">티켓 내역</TabsTrigger>
               <TabsTrigger value="send">발송 관리</TabsTrigger>
               <TabsTrigger value="games">게임 기록</TabsTrigger>
               <TabsTrigger value="payments">결제 내역</TabsTrigger>
               <TabsTrigger value="logs">로그</TabsTrigger>
             </TabsList>
-            
+
             <TabsContent value="overview" className="pt-4">
               <div className="grid grid-cols-2 gap-4">
                 <Card>
@@ -204,6 +220,10 @@ export const UserDetailPage: FC = () => {
               <UserGoldTab userId={userId} />
             </TabsContent>
 
+            <TabsContent value="diamond" className="pt-4">
+              <UserDiamondTab userId={userId} />
+            </TabsContent>
+
             <TabsContent value="tickets" className="pt-4">
               <UserTicketsTab userId={userId} userName={user.userName} />
             </TabsContent>
@@ -217,11 +237,11 @@ export const UserDetailPage: FC = () => {
                 최근 게임 기록이 없습니다.
               </div>
             </TabsContent>
-            
+
             <TabsContent value="payments" className="pt-4">
               <UserPaymentsTab userId={userId} />
             </TabsContent>
-            
+
             <TabsContent value="logs" className="pt-4">
               <div className="p-10 bg-white border rounded-lg text-center text-gray-400 text-sm">
                 접속 및 활동 로그가 없습니다.

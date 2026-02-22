@@ -15,6 +15,8 @@ export interface User {
   role: UserRole
   banned: boolean
   bannedUntil: number
+  gold: number | string
+  diamond: number | string
   createdAt: string
   adultConfirmed: number
   hashedCi: string | null
@@ -48,6 +50,14 @@ export interface GoldHistoryResponse {
     log: UserGoldLogData[]
   }
   total: number // 전체 로그 수
+}
+
+export interface DiamondHistoryResponse {
+  data: {
+    total: number
+    log: UserGoldLogData[]
+  }
+  total: number
 }
 
 export interface UserTicketData {

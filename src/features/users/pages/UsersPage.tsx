@@ -79,9 +79,10 @@ export const UsersPage: FC = () => {
       return
     }
 
+    const reason = window.prompt('차단 사유를 입력하세요:') || '관리자 차단'
     const bannedUntil = new Date().getTime() + days * 24 * 60 * 60 * 1000
     if (window.confirm(`${days}일 동안 사용자를 차단하시겠습니까?`)) {
-      banUser({ id: userId, bannedUntil })
+      banUser({ id: userId, bannedUntil, reason })
     }
   }
 

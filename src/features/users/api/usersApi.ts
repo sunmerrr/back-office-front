@@ -1,29 +1,58 @@
 import { authenticatedApiClient } from '@/shared/api/interceptor'
-import type { 
-  User, 
-  UserListParams, 
-  UserListResponse, 
-  GoldHistoryResponse, 
+import type {
+  User,
+  UserListParams,
+  UserListResponse,
+  GoldHistoryResponse,
+  DiamondHistoryResponse,
   UserTicketListResponse,
-  PaymentHistoryResponse 
+  PaymentHistoryResponse
 } from '../types'
+
+// 백엔드 응답 → 프론트 User 타입 매핑
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const mapUser = (u: any): User => ({
+  ...u,
+  userName: u.userName ?? u.nickname ?? u.email ?? '',
+  userGameId: u.userGameId ?? String(u.id),
+  identifier: u.identifier ?? u.email ?? '',
+  banned: u.banned ?? u.status === 'BANNED',
+  bannedUntil: u.bannedUntil ? new Date(u.bannedUntil).getTime() : 0,
+  gold: u.gold ?? 0,
+  diamond: u.diamond ?? 0,
+  adultConfirmed: u.adultConfirmed ?? 0,
+  allowUserNameChange: u.allowUserNameChange ?? false,
+  provider: u.provider ?? '',
+  providerAccountId: u.providerAccountId ?? null,
+  iconIndex: u.iconIndex ?? 0,
+  roles: u.roles ?? [u.role],
+  hashedCi: u.hashedCi ?? null,
+  dailyMaxLimit: u.dailyMaxLimit ?? '0',
+})
 
 export const usersApi = {
   getUsers: async (params?: UserListParams): Promise<UserListResponse> => {
     const searchParams = new URLSearchParams()
     if (params?.page) searchParams.set('page', params.page.toString())
     if (params?.limit) searchParams.set('limit', params.limit.toString())
-    if (params?.query) searchParams.set('query', params.query)
+    if (params?.query) searchParams.set('search', params.query)
 
-    return authenticatedApiClient.get('user/list', { searchParams }).json()
+    const res: { data: unknown[]; meta: { page: number; limit: number; total: number } } =
+      await authenticatedApiClient.get('user/list', { searchParams }).json()
+
+    return {
+      data: res.data.map(mapUser),
+      meta: res.meta,
+    }
   },
 
   getPaymentHistory: async (userId: string): Promise<PaymentHistoryResponse> => {
-    return authenticatedApiClient.post('payment/history', { json: { userId } }).json()
+    return authenticatedApiClient.get(`user/${userId}/payments`).json()
   },
 
   getUser: async (id: string): Promise<User> => {
-    return authenticatedApiClient.get('admin/user', { searchParams: { userId: id } }).json()
+    const res = await authenticatedApiClient.get(`user/${id}`).json()
+    return mapUser(res)
   },
 
   getUserTickets: async (page = 1, limit = 20): Promise<UserTicketListResponse> => {
@@ -33,31 +62,53 @@ export const usersApi = {
     return authenticatedApiClient.get('assets/tickets', { searchParams }).json()
   },
 
+  // ── Gold ──
+
   getGoldHistory: async (userId: string, page = 1, limit = 20): Promise<GoldHistoryResponse> => {
-    return authenticatedApiClient.get('admin/gold', { 
-      searchParams: { userId, page, limit } 
+    return authenticatedApiClient.get('admin/gold', {
+      searchParams: { userId, page, limit }
     }).json()
   },
 
-  addGold: async (userIds: string[], amount: number): Promise<void> => {
-    const searchParams = new URLSearchParams()
-    userIds.forEach(id => searchParams.append('userIds[]', id))
-    searchParams.set('amount', amount.toString())
-    return authenticatedApiClient.post('admin/gold/add', { searchParams }).json()
+  addGold: async (userIds: string[], amount: number, message?: string): Promise<void> => {
+    return authenticatedApiClient.post('admin/gold/add', {
+      json: { userIds: userIds.map(Number), amount, message },
+    }).json()
   },
 
-  subGold: async (userIds: string[], amount: number): Promise<void> => {
-    const searchParams = new URLSearchParams()
-    userIds.forEach(id => searchParams.append('userIds[]', id))
-    searchParams.set('amount', amount.toString())
-    return authenticatedApiClient.post('admin/gold/sub', { searchParams }).json()
+  subGold: async (userIds: string[], amount: number, message?: string): Promise<void> => {
+    return authenticatedApiClient.post('admin/gold/sub', {
+      json: { userIds: userIds.map(Number), amount, message },
+    }).json()
   },
 
   emptyGold: async (userIds: string[]): Promise<void> => {
-    const searchParams = new URLSearchParams()
-    userIds.forEach(id => searchParams.append('userIds', id))
-    return authenticatedApiClient.post('admin/gold/empty', { searchParams }).json()
+    return authenticatedApiClient.post('admin/gold/empty', {
+      json: { userIds: userIds.map(Number) },
+    }).json()
   },
+
+  // ── Diamond ──
+
+  getDiamondHistory: async (userId: string, page = 1, limit = 20): Promise<DiamondHistoryResponse> => {
+    return authenticatedApiClient.get('admin/diamond', {
+      searchParams: { userId, page, limit }
+    }).json()
+  },
+
+  addDiamond: async (userIds: string[], amount: number, message?: string): Promise<void> => {
+    return authenticatedApiClient.post('admin/diamond/add', {
+      json: { userIds: userIds.map(Number), amount, message },
+    }).json()
+  },
+
+  subDiamond: async (userIds: string[], amount: number, message?: string): Promise<void> => {
+    return authenticatedApiClient.post('admin/diamond/sub', {
+      json: { userIds: userIds.map(Number), amount, message },
+    }).json()
+  },
+
+  // ── User CRUD ──
 
   createUser: async (data: Partial<User>): Promise<User> => {
     return authenticatedApiClient.post('user', { json: data }).json()
@@ -68,15 +119,19 @@ export const usersApi = {
   },
 
   updateUserRole: async (id: string, role: string): Promise<void> => {
-    return authenticatedApiClient.post('user/roles', { json: { id, role } }).json()
+    return authenticatedApiClient.patch(`user/${id}/role`, { json: { role } }).json()
   },
 
-  banUser: async (id: string, bannedUntil: number): Promise<void> => {
-    return authenticatedApiClient.post('user/ban', { json: { id, bannedUntil } }).json()
+  // ── Ban ──
+
+  banUser: async (id: string, bannedUntil?: number, reason?: string): Promise<void> => {
+    return authenticatedApiClient.post(`user/${id}/ban`, {
+      json: { bannedUntil, reason },
+    }).json()
   },
 
   unbanUser: async (id: string): Promise<void> => {
-    return authenticatedApiClient.post('user/unban', { json: { id } }).json()
+    return authenticatedApiClient.post(`user/${id}/unban`).json()
   },
 
   deleteUser: async (id: string): Promise<void> => {

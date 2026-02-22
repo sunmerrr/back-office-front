@@ -76,12 +76,14 @@ export const useUserTickets = (page = 1, limit = 20) => {
   })
 }
 
+// ── Gold mutations ──
+
 export const useAddGold = () => {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: ({ userIds, amount }: { userIds: string[]; amount: number }) =>
-      usersApi.addGold(userIds, amount),
+    mutationFn: ({ userIds, amount, message }: { userIds: string[]; amount: number; message?: string }) =>
+      usersApi.addGold(userIds, amount, message),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['users'] })
       variables.userIds.forEach(id => {
@@ -95,8 +97,8 @@ export const useSubGold = () => {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: ({ userIds, amount }: { userIds: string[]; amount: number }) =>
-      usersApi.subGold(userIds, amount),
+    mutationFn: ({ userIds, amount, message }: { userIds: string[]; amount: number; message?: string }) =>
+      usersApi.subGold(userIds, amount, message),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['users'] })
       variables.userIds.forEach(id => {
@@ -120,12 +122,56 @@ export const useEmptyGold = () => {
   })
 }
 
+export const useDiamondHistory = (userId: string, page = 1, limit = 20) => {
+  return useQuery({
+    queryKey: ['diamondHistory', userId, page, limit],
+    queryFn: () => usersApi.getDiamondHistory(userId, page, limit),
+    enabled: !!userId,
+  })
+}
+
+// ── Diamond mutations ──
+
+export const useAddDiamond = () => {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({ userIds, amount, message }: { userIds: string[]; amount: number; message?: string }) =>
+      usersApi.addDiamond(userIds, amount, message),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['users'] })
+      variables.userIds.forEach(id => {
+        queryClient.invalidateQueries({ queryKey: ['users', id] })
+        queryClient.invalidateQueries({ queryKey: ['diamondHistory', id] })
+      })
+    },
+  })
+}
+
+export const useSubDiamond = () => {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({ userIds, amount, message }: { userIds: string[]; amount: number; message?: string }) =>
+      usersApi.subDiamond(userIds, amount, message),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['users'] })
+      variables.userIds.forEach(id => {
+        queryClient.invalidateQueries({ queryKey: ['users', id] })
+        queryClient.invalidateQueries({ queryKey: ['diamondHistory', id] })
+      })
+    },
+  })
+}
+
+// ── Ban mutations ──
+
 export const useBanUser = () => {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: ({ id, bannedUntil }: { id: string; bannedUntil: number }) =>
-      usersApi.banUser(id, bannedUntil),
+    mutationFn: ({ id, bannedUntil, reason }: { id: string; bannedUntil?: number; reason: string }) =>
+      usersApi.banUser(id, bannedUntil, reason),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['users'] })
     },
