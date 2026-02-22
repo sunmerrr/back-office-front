@@ -7,6 +7,9 @@ import {
   Trophy,
   FileText,
   Shield,
+  DollarSign,
+  LayoutDashboard,
+  Settings,
   ChevronRight,
   ChevronLeft
 } from 'lucide-react'
@@ -23,12 +26,15 @@ type NavItem = {
 }
 
 const navigation: NavItem[] = [
+  { name: '대시보드', path: '/dashboard', icon: LayoutDashboard },
   { name: '회원 관리', path: '/users', icon: Users },
   { name: '메시지 관리', path: '/messages', icon: MessageSquare },
   { name: '티켓 관리', path: '/tickets', icon: Ticket },
   { name: '토너먼트', path: '/tournaments', icon: Trophy },
-  { name: '오딧 로그', path: '/audit-logs', icon: FileText, permission: 'audit:read' },
+  { name: '결제 내역', path: '/payments', icon: DollarSign },
+  { name: '감사 로그', path: '/audit-logs', icon: FileText, permission: 'audit:read' },
   { name: '관리자 관리', path: '/admins', icon: Shield, permission: 'settings:manage' },
+  { name: '시스템 설정', path: '/settings', icon: Settings, permission: 'settings:manage' },
 ]
 
 export const Sidebar: FC = () => {

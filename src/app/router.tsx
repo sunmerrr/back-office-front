@@ -7,6 +7,9 @@ import { UsersPage } from '@/features/users/pages/UsersPage'
 import { UserDetailPage } from '@/features/users/pages/UserDetailPage'
 import { AuditLogsPage } from '@/features/audit-logs/pages/AuditLogsPage'
 import { AdminsPage } from '@/features/admins/pages/AdminsPage'
+import { PaymentsPage } from '@/features/payments/pages/PaymentsPage'
+import { DashboardPage } from '@/features/dashboard/pages/DashboardPage'
+import { SettingsPage } from '@/features/settings/pages/SettingsPage'
 import { MainLayout } from '@/shared/components/layout/MainLayout'
 import { useAuthStore } from '@/shared/stores/authStore'
 import { normalizeRole } from '@/shared/types/permission'
@@ -14,7 +17,7 @@ import { normalizeRole } from '@/shared/types/permission'
 export const requireSuperAdmin = () => {
   const user = useAuthStore.getState().user
   if (!user?.role || normalizeRole(user.role) !== 'superadmin') {
-    throw redirect({ to: '/users' })
+    throw redirect({ to: '/dashboard' })
   }
 }
 
@@ -57,6 +60,12 @@ const authenticatedRoute = createRoute({
 })
 
 // Feature Routes (Protected)
+const dashboardRoute = createRoute({
+  getParentRoute: () => authenticatedRoute,
+  path: '/dashboard',
+  component: DashboardPage,
+})
+
 const messagesRoute = createRoute({
   getParentRoute: () => authenticatedRoute,
   path: '/messages',
@@ -87,6 +96,12 @@ const userDetailRoute = createRoute({
   component: UserDetailPage,
 })
 
+const paymentsRoute = createRoute({
+  getParentRoute: () => authenticatedRoute,
+  path: '/payments',
+  component: PaymentsPage,
+})
+
 // Audit Logs Route (SUPERADMIN only)
 const auditLogsRoute = createRoute({
   getParentRoute: () => authenticatedRoute,
@@ -103,13 +118,21 @@ const adminsRoute = createRoute({
   beforeLoad: () => requireSuperAdmin(),
 })
 
-// Index Route (Protected)
+// Settings Route (SUPERADMIN only)
+const settingsRoute = createRoute({
+  getParentRoute: () => authenticatedRoute,
+  path: '/settings',
+  component: SettingsPage,
+  beforeLoad: () => requireSuperAdmin(),
+})
+
+// Index Route (Protected) - Redirect to dashboard
 const indexRoute = createRoute({
   getParentRoute: () => authenticatedRoute,
   path: '/',
   component: () => null,
   beforeLoad: () => {
-    throw redirect({ to: '/users' })
+    throw redirect({ to: '/dashboard' })
   },
 })
 
@@ -118,13 +141,16 @@ const routeTree = rootRoute.addChildren([
   loginRoute,
   authenticatedRoute.addChildren([
     indexRoute,
+    dashboardRoute,
     messagesRoute,
     ticketsRoute,
     tournamentsRoute,
     usersRoute,
     userDetailRoute,
+    paymentsRoute,
     auditLogsRoute,
     adminsRoute,
+    settingsRoute,
   ]),
 ])
 
