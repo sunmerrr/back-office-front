@@ -199,3 +199,27 @@ export const useDeleteUser = () => {
     },
   })
 }
+
+// ── Nickname ──
+
+export const useChangeNickname = () => {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({ id, nickname, reason }: { id: string; nickname: string; reason: string }) =>
+      usersApi.changeNickname(id, nickname, reason),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['users'] })
+      queryClient.invalidateQueries({ queryKey: ['users', variables.id] })
+      queryClient.invalidateQueries({ queryKey: ['nicknameHistory', variables.id] })
+    },
+  })
+}
+
+export const useNicknameHistory = (userId: string) => {
+  return useQuery({
+    queryKey: ['nicknameHistory', userId],
+    queryFn: () => usersApi.getNicknameHistory(userId),
+    enabled: !!userId,
+  })
+}

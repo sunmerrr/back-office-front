@@ -22,13 +22,21 @@ function mapTournament(raw: any): Tournament {
     name: raw.name || '',
     description: raw.description || '',
     imagePath: raw.imagePath || undefined,
-    startDate: raw.startAt || '',
-    endDate: raw.endAt || '',
+    startDate: raw.startAt ? Number(raw.startAt) : null,
+    endDate: raw.endAt ? Number(raw.endAt) : null,
     status: STATUS_MAP[raw.status] || 'upcoming',
-    prizePool: raw.prizePool || 0,
+    prizePool: raw.prizePool ?? '0',
     participants: raw.participants ?? raw.participantCount ?? raw._count?.participants ?? 0,
     maxParticipants: raw.maxParticipants || undefined,
     cancelledReason: raw.cancelledReason || undefined,
+    buyinGold: raw.buyinGold ?? null,
+    buyinTicketId: raw.buyinTicketId ? String(raw.buyinTicketId) : null,
+    ticketOnly: raw.ticketOnly ?? false,
+    prizeStructure: raw.prizeStructure ?? null,
+    prizeTicketId: raw.prizeTicketId ? String(raw.prizeTicketId) : null,
+    visibility: raw.visibility ?? true,
+    pauseConfig: raw.pauseConfig ?? null,
+    hitRunConfig: raw.hitRunConfig ?? null,
     createdAt: raw.createdAt || '',
     updatedAt: raw.updatedAt || '',
   }
@@ -36,11 +44,11 @@ function mapTournament(raw: any): Tournament {
 
 function mapParticipant(raw: any): TournamentParticipant {
   return {
-    id: raw.id,
-    userId: raw.user?.id || raw.userId,
+    id: String(raw.id),
+    userId: String(raw.user?.id || raw.userId),
     email: raw.user?.email || '',
     nickname: raw.user?.nickname || undefined,
-    registeredAt: raw.registeredAt || '',
+    registeredAt: Number(raw.registeredAt),
   }
 }
 
@@ -74,6 +82,14 @@ export const tournamentsApi = {
       maxParticipants: data.maxParticipants,
       startAt: data.startDate,
       endAt: data.endDate,
+      buyinGold: data.buyinGold,
+      buyinTicketId: data.buyinTicketId,
+      ticketOnly: data.ticketOnly,
+      prizeStructure: data.prizeStructure,
+      prizeTicketId: data.prizeTicketId,
+      visibility: data.visibility,
+      pauseConfig: data.pauseConfig,
+      hitRunConfig: data.hitRunConfig,
     }
     const raw: any = await authenticatedApiClient.post('tournament/create', { json: body }).json()
     return mapTournament(raw)
@@ -89,6 +105,14 @@ export const tournamentsApi = {
     if (data.startDate !== undefined) body.startAt = data.startDate
     if (data.endDate !== undefined) body.endAt = data.endDate
     if (data.status !== undefined) body.status = REVERSE_STATUS_MAP[data.status] || data.status
+    if (data.buyinGold !== undefined) body.buyinGold = data.buyinGold
+    if (data.buyinTicketId !== undefined) body.buyinTicketId = data.buyinTicketId
+    if (data.ticketOnly !== undefined) body.ticketOnly = data.ticketOnly
+    if (data.prizeStructure !== undefined) body.prizeStructure = data.prizeStructure
+    if (data.prizeTicketId !== undefined) body.prizeTicketId = data.prizeTicketId
+    if (data.visibility !== undefined) body.visibility = data.visibility
+    if (data.pauseConfig !== undefined) body.pauseConfig = data.pauseConfig
+    if (data.hitRunConfig !== undefined) body.hitRunConfig = data.hitRunConfig
 
     const raw: any = await authenticatedApiClient.patch(`tournament/${id}`, { json: body }).json()
     return mapTournament(raw)
@@ -108,12 +132,17 @@ export const tournamentsApi = {
     return (Array.isArray(raw) ? raw : []).map(mapParticipant)
   },
 
-  addParticipant: async (tournamentId: string, userId: number): Promise<TournamentParticipant> => {
+  addParticipant: async (tournamentId: string, userId: string): Promise<TournamentParticipant> => {
     const raw: any = await authenticatedApiClient.post(`tournament/${tournamentId}/participants`, { json: { userId } }).json()
     return mapParticipant(raw)
   },
 
-  removeParticipant: async (tournamentId: string, userId: number): Promise<void> => {
+  removeParticipant: async (tournamentId: string, userId: string): Promise<void> => {
     return authenticatedApiClient.delete(`tournament/${tournamentId}/participants/${userId}`).json()
+  },
+
+  copyTournament: async (id: string): Promise<Tournament> => {
+    const raw: any = await authenticatedApiClient.post(`tournament/${id}/copy`).json()
+    return mapTournament(raw)
   },
 }

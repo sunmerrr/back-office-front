@@ -10,6 +10,8 @@ import { AdminsPage } from '@/features/admins/pages/AdminsPage'
 import { PaymentsPage } from '@/features/payments/pages/PaymentsPage'
 import { DashboardPage } from '@/features/dashboard/pages/DashboardPage'
 import { SettingsPage } from '@/features/settings/pages/SettingsPage'
+import { AnnouncementsPage } from '@/features/announcements/pages/AnnouncementsPage'
+import { ShopPage } from '@/features/shop/pages/ShopPage'
 import { MainLayout } from '@/shared/components/layout/MainLayout'
 import { useAuthStore } from '@/shared/stores/authStore'
 import { normalizeRole } from '@/shared/types/permission'
@@ -126,6 +128,22 @@ const settingsRoute = createRoute({
   beforeLoad: () => requireSuperAdmin(),
 })
 
+// Shop Route (SUPERADMIN only)
+const shopRoute = createRoute({
+  getParentRoute: () => authenticatedRoute,
+  path: '/shop',
+  component: ShopPage,
+  beforeLoad: () => requireSuperAdmin(),
+})
+
+// Announcements Route (SUPERADMIN only)
+const announcementsRoute = createRoute({
+  getParentRoute: () => authenticatedRoute,
+  path: '/announcements',
+  component: AnnouncementsPage,
+  beforeLoad: () => requireSuperAdmin(),
+})
+
 // Index Route (Protected) - Redirect to dashboard
 const indexRoute = createRoute({
   getParentRoute: () => authenticatedRoute,
@@ -151,6 +169,8 @@ const routeTree = rootRoute.addChildren([
     auditLogsRoute,
     adminsRoute,
     settingsRoute,
+    announcementsRoute,
+    shopRoute,
   ]),
 ])
 

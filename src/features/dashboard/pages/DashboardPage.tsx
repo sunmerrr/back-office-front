@@ -77,7 +77,7 @@ export const DashboardPage: FC = () => {
               오늘 결제
             </div>
             <p className="text-xl font-bold">{data.payments.todayCount}건</p>
-            <p className="text-sm text-gray-500">{data.payments.todayAmount.toLocaleString()}원</p>
+            <p className="text-sm text-gray-500">{Number(data.payments.todayAmount).toLocaleString()}원</p>
           </CardContent>
         </Card>
         <Card>
@@ -87,7 +87,7 @@ export const DashboardPage: FC = () => {
               이번 달 결제
             </div>
             <p className="text-xl font-bold">{data.payments.monthCount}건</p>
-            <p className="text-sm text-gray-500">{data.payments.monthAmount.toLocaleString()}원</p>
+            <p className="text-sm text-gray-500">{Number(data.payments.monthAmount).toLocaleString()}원</p>
           </CardContent>
         </Card>
       </div>

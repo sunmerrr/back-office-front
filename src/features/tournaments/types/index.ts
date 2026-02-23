@@ -1,25 +1,58 @@
+export interface PrizeEntry {
+  rank: number
+  percent: number
+}
+
+export interface PauseConfig {
+  type: 'level' | 'players' | 'percent'
+  value: number
+}
+
+export interface HitRunConfig {
+  enabled: boolean
+  minHands: number
+  penalty?: string
+}
+
 export interface Tournament {
   id: string
   name: string
   description: string
   imagePath?: string
-  startDate: string
-  endDate: string
+  startDate: number | null
+  endDate: number | null
   status: 'upcoming' | 'ongoing' | 'completed' | 'cancelled'
-  prizePool: number
+  prizePool: string
   participants: number
   maxParticipants?: number
   cancelledReason?: string
+
+  // Buyin
+  buyinGold: string | null
+  buyinTicketId: string | null
+  ticketOnly: boolean
+
+  // Prize
+  prizeStructure: PrizeEntry[] | null
+  prizeTicketId: string | null
+
+  // 노출
+  visibility: boolean
+
+  // Pause / Hit & Run
+  pauseConfig: PauseConfig | null
+  hitRunConfig: HitRunConfig | null
+
   createdAt: string
   updatedAt: string
 }
 
 export interface TournamentParticipant {
-  id: number
-  userId: number
+  id: string
+  userId: string
   email: string
   nickname?: string
-  registeredAt: string
+  registeredAt: number
 }
 
 export interface TournamentListParams {
@@ -33,8 +66,24 @@ export interface CreateTournamentData {
   name: string
   description?: string
   imagePath?: string
-  startDate: string
-  endDate: string
-  prizePool?: number
+  startDate: number
+  endDate: number
+  prizePool?: string
   maxParticipants?: number
+
+  // Buyin
+  buyinGold?: string
+  buyinTicketId?: string
+  ticketOnly?: boolean
+
+  // Prize
+  prizeStructure?: PrizeEntry[]
+  prizeTicketId?: string
+
+  // 노출
+  visibility?: boolean
+
+  // Pause / Hit & Run
+  pauseConfig?: PauseConfig
+  hitRunConfig?: HitRunConfig
 }

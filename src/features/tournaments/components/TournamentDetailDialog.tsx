@@ -46,25 +46,23 @@ export const TournamentDetailDialog: FC<TournamentDetailDialogProps> = ({
     tournament?.status === 'upcoming' || tournament?.status === 'ongoing'
 
   const handleAddParticipant = () => {
-    if (!tournament || !newUserId) return
-    const userId = Number(newUserId)
-    if (isNaN(userId) || userId <= 0) return
+    if (!tournament || !newUserId.trim()) return
 
     addParticipant(
-      { tournamentId: tournament.id, userId },
+      { tournamentId: tournament.id, userId: newUserId.trim() },
       { onSuccess: () => setNewUserId('') },
     )
   }
 
-  const handleRemoveParticipant = (userId: number) => {
+  const handleRemoveParticipant = (userId: string) => {
     if (!tournament) return
     if (!window.confirm('참가자를 해제하시겠습니까?')) return
     removeParticipant({ tournamentId: tournament.id, userId })
   }
 
-  const formatDate = (dateStr?: string) => {
-    if (!dateStr) return '-'
-    const d = new Date(dateStr)
+  const formatDate = (ts?: number | null) => {
+    if (!ts) return '-'
+    const d = new Date(ts)
     return isNaN(d.getTime()) ? '-' : d.toLocaleString('ko-KR')
   }
 
@@ -95,7 +93,7 @@ export const TournamentDetailDialog: FC<TournamentDetailDialogProps> = ({
             <div>
               <span className="text-gray-500">상금:</span>{' '}
               <span className="font-medium">
-                {tournament.prizePool ? tournament.prizePool.toLocaleString() : '-'}
+                {tournament.prizePool ? Number(tournament.prizePool).toLocaleString() : '-'}
               </span>
             </div>
             <div>
@@ -106,6 +104,53 @@ export const TournamentDetailDialog: FC<TournamentDetailDialogProps> = ({
               </span>
             </div>
           </div>
+
+          {/* 확장 설정 */}
+          {(tournament.buyinGold || tournament.buyinTicketId || tournament.ticketOnly) && (
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 space-y-1">
+              <p className="text-sm font-medium text-blue-800">바이인 설정</p>
+              <div className="grid grid-cols-2 gap-2 text-sm text-blue-700">
+                {tournament.buyinGold && (
+                  <div>골드: {Number(tournament.buyinGold).toLocaleString()}</div>
+                )}
+                {tournament.buyinTicketId && (
+                  <div>티켓 ID: {tournament.buyinTicketId}</div>
+                )}
+                {tournament.ticketOnly && <div>티켓 전용</div>}
+              </div>
+            </div>
+          )}
+
+          {(tournament.prizeStructure?.length || tournament.prizeTicketId) && (
+            <div className="bg-green-50 border border-green-200 rounded-lg p-3 space-y-1">
+              <p className="text-sm font-medium text-green-800">상금 설정</p>
+              {tournament.prizeTicketId && (
+                <p className="text-sm text-green-700">상금 티켓 ID: {tournament.prizeTicketId}</p>
+              )}
+              {tournament.prizeStructure && tournament.prizeStructure.length > 0 && (
+                <div className="text-sm text-green-700">
+                  {tournament.prizeStructure.map((e) => (
+                    <span key={e.rank} className="mr-3">{e.rank}위: {e.percent}%</span>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {(!tournament.visibility || tournament.pauseConfig || tournament.hitRunConfig?.enabled) && (
+            <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 space-y-1">
+              <p className="text-sm font-medium text-gray-800">부가 설정</p>
+              <div className="text-sm text-gray-700 space-y-1">
+                {!tournament.visibility && <div>목록 비노출</div>}
+                {tournament.pauseConfig && (
+                  <div>Pause: {tournament.pauseConfig.type} = {tournament.pauseConfig.value}</div>
+                )}
+                {tournament.hitRunConfig?.enabled && (
+                  <div>Hit & Run 방지: 최소 {tournament.hitRunConfig.minHands}핸드</div>
+                )}
+              </div>
+            </div>
+          )}
 
           {tournament.cancelledReason && (
             <div className="bg-red-50 border border-red-200 rounded-lg p-3">

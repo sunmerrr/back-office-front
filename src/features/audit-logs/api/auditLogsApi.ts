@@ -7,7 +7,7 @@ export const auditLogsApi = {
     const searchParams = new URLSearchParams()
     if (params?.page) searchParams.set('page', params.page.toString())
     if (params?.limit) searchParams.set('limit', params.limit.toString())
-    if (params?.adminId) searchParams.set('adminId', params.adminId.toString())
+    if (params?.adminId) searchParams.set('adminId', params.adminId)
     if (params?.action) searchParams.set('action', params.action)
     if (params?.targetType) searchParams.set('targetType', params.targetType)
     if (params?.targetId) searchParams.set('targetId', params.targetId)
@@ -17,7 +17,7 @@ export const auditLogsApi = {
     return authenticatedApiClient.get('audit-log/list', { searchParams }).json()
   },
 
-  getAuditLog: async (id: number): Promise<AuditLog> => {
+  getAuditLog: async (id: string): Promise<AuditLog> => {
     return authenticatedApiClient.get(`audit-log/${id}`).json()
   },
 }

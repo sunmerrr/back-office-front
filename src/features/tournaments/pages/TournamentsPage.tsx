@@ -5,6 +5,7 @@ import {
   useUpdateTournament,
   useDeleteTournament,
   useCancelTournament,
+  useCopyTournament,
 } from '../hooks/useTournaments'
 import {
   Table,
@@ -39,7 +40,7 @@ import { EditTournamentDialog } from '../components/EditTournamentDialog'
 import { TournamentDetailDialog } from '../components/TournamentDetailDialog'
 import { CancelTournamentDialog } from '../components/CancelTournamentDialog'
 import type { Tournament, CreateTournamentData } from '../types'
-import { Pencil, Trash2, XCircle, Eye, Plus } from 'lucide-react'
+import { Pencil, Trash2, XCircle, Eye, Plus, Copy } from 'lucide-react'
 
 const STATUS_OPTIONS = [
   { value: 'all', label: '전체' },
@@ -74,6 +75,7 @@ export const TournamentsPage: FC = () => {
   const { mutate: updateTournament, isPending: isUpdating } = useUpdateTournament()
   const { mutate: deleteTournament, isPending: isDeleting } = useDeleteTournament()
   const { mutate: cancelTournament, isPending: isCancelling } = useCancelTournament()
+  const { mutate: copyTournament, isPending: isCopying } = useCopyTournament()
 
   const totalPages = data ? Math.ceil(data.total / limit) : 0
 
@@ -123,9 +125,9 @@ export const TournamentsPage: FC = () => {
     )
   }
 
-  const formatDate = (dateStr?: string) => {
-    if (!dateStr) return '-'
-    const d = new Date(dateStr)
+  const formatDate = (ts?: number | null) => {
+    if (!ts) return '-'
+    const d = new Date(ts)
     return isNaN(d.getTime()) ? '-' : d.toLocaleDateString('ko-KR')
   }
 
@@ -210,7 +212,7 @@ export const TournamentsPage: FC = () => {
                     <TournamentStatusBadge status={t.status} />
                   </TableCell>
                   <TableCell className="text-right">
-                    {t.prizePool ? t.prizePool.toLocaleString() : '-'}
+                    {t.prizePool ? Number(t.prizePool).toLocaleString() : '-'}
                   </TableCell>
                   <TableCell className="text-center">
                     {t.participants}{t.maxParticipants ? `/${t.maxParticipants}` : ''}
@@ -226,6 +228,15 @@ export const TournamentsPage: FC = () => {
                         title="상세"
                       >
                         <Eye className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => copyTournament(t.id)}
+                        disabled={isCopying}
+                        title="복사"
+                      >
+                        <Copy className="h-4 w-4" />
                       </Button>
                       {(t.status === 'upcoming' || t.status === 'ongoing') && (
                         <>

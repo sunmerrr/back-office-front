@@ -112,4 +112,14 @@ export interface PaymentHistoryResponse {
   message: string
 }
 
+export interface NicknameHistoryItem {
+  id: string
+  userId: string
+  oldName: string
+  newName: string
+  changedBy: string | null
+  reason: string | null
+  createdAt: string
+}
+
 export type UserListResponse = PaginatedResponse<User>

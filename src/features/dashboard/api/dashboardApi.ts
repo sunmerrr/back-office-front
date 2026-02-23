@@ -2,10 +2,10 @@ import { authenticatedApiClient } from '@/shared/api/interceptor'
 
 export interface DashboardSummary {
   users: { total: number; today: number; banned: number }
-  payments: { todayAmount: number; todayCount: number; monthAmount: number; monthCount: number }
+  payments: { todayAmount: string; todayCount: number; monthAmount: string; monthCount: number }
   tournaments: { upcoming: number; ongoing: number }
   recentAuditLogs: {
-    id: number
+    id: string
     adminName: string
     action: string
     targetName?: string

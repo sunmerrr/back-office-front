@@ -1,5 +1,5 @@
 import { FC, useState } from 'react'
-import { usePayments, usePaymentStats } from '../hooks/usePayments'
+import { usePayments, usePaymentStats, useRefundPayment } from '../hooks/usePayments'
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/shared/components/ui/table'
@@ -14,7 +14,9 @@ import {
   PaginationItem, PaginationLink, PaginationNext, PaginationPrevious,
 } from '@/shared/components/ui/pagination'
 import { Card, CardContent } from '@/shared/components/ui/card'
-import { DollarSign, TrendingUp } from 'lucide-react'
+import { DollarSign, TrendingUp, RotateCcw } from 'lucide-react'
+import { RefundDialog } from '../components/RefundDialog'
+import type { Payment } from '../types'
 
 const STATUS_OPTIONS = [
   { value: 'all', label: '전체' },
@@ -35,6 +37,8 @@ export const PaymentsPage: FC = () => {
   const [statusFilter, setStatusFilter] = useState('all')
   const [startDate, setStartDate] = useState('')
   const [endDate, setEndDate] = useState('')
+  const [refundOpen, setRefundOpen] = useState(false)
+  const [selectedPayment, setSelectedPayment] = useState<Payment | null>(null)
 
   const { data, isLoading, error } = usePayments({
     page,
@@ -45,6 +49,20 @@ export const PaymentsPage: FC = () => {
   })
 
   const { data: stats } = usePaymentStats()
+  const { mutate: refundPayment, isPending: isRefunding } = useRefundPayment()
+
+  const handleRefundOpen = (payment: Payment) => {
+    setSelectedPayment(payment)
+    setRefundOpen(true)
+  }
+
+  const handleRefund = (reason: string) => {
+    if (!selectedPayment) return
+    refundPayment(
+      { id: selectedPayment.id, reason },
+      { onSuccess: () => setRefundOpen(false) },
+    )
+  }
 
   const totalPages = data ? Math.ceil(data.total / limit) : 0
 
@@ -52,13 +70,13 @@ export const PaymentsPage: FC = () => {
     if (newPage >= 1 && newPage <= totalPages) setPage(newPage)
   }
 
-  const formatAmount = (amount: number, currency: string) => {
-    return `${amount.toLocaleString()} ${currency}`
+  const formatAmount = (amount: string, currency: string) => {
+    return `${Number(amount).toLocaleString()} ${currency}`
   }
 
-  const formatDate = (dateStr?: string) => {
-    if (!dateStr) return '-'
-    const d = new Date(dateStr)
+  const formatDate = (ts?: number | null) => {
+    if (!ts) return '-'
+    const d = new Date(ts)
     return isNaN(d.getTime()) ? '-' : d.toLocaleDateString('ko-KR')
   }
 
@@ -84,7 +102,7 @@ export const PaymentsPage: FC = () => {
                 <TrendingUp className="h-4 w-4" />
                 총 결제 금액
               </div>
-              <p className="text-lg font-bold">{stats.totalAmount.toLocaleString()}원</p>
+              <p className="text-lg font-bold">{Number(stats.totalAmount).toLocaleString()}원</p>
             </CardContent>
           </Card>
         </div>
@@ -134,22 +152,23 @@ export const PaymentsPage: FC = () => {
               <TableHead className="text-center">수단</TableHead>
               <TableHead className="text-center">상태</TableHead>
               <TableHead className="text-center">결제일</TableHead>
+              <TableHead className="text-center w-[80px]">관리</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {isLoading ? (
               <TableRow>
-                <TableCell colSpan={7} className="text-center py-10">로딩 중...</TableCell>
+                <TableCell colSpan={8} className="text-center py-10">로딩 중...</TableCell>
               </TableRow>
             ) : error ? (
               <TableRow>
-                <TableCell colSpan={7} className="text-center py-10 text-red-500">
+                <TableCell colSpan={8} className="text-center py-10 text-red-500">
                   데이터를 불러오는 중 오류가 발생했습니다.
                 </TableCell>
               </TableRow>
             ) : data?.items.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="text-center py-10 text-gray-500">
+                <TableCell colSpan={8} className="text-center py-10 text-gray-500">
                   결제 내역이 없습니다.
                 </TableCell>
               </TableRow>
@@ -172,6 +191,19 @@ export const PaymentsPage: FC = () => {
                       <Badge variant={badge.variant}>{badge.label}</Badge>
                     </TableCell>
                     <TableCell className="text-center text-sm">{formatDate(p.paidAt)}</TableCell>
+                    <TableCell className="text-center">
+                      {p.status === 'COMPLETED' && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                          onClick={() => handleRefundOpen(p)}
+                          title="환불"
+                        >
+                          <RotateCcw className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </TableCell>
                   </TableRow>
                 )
               })
@@ -208,6 +240,15 @@ export const PaymentsPage: FC = () => {
           </PaginationContent>
         </Pagination>
       )}
+
+      {/* Dialogs */}
+      <RefundDialog
+        open={refundOpen}
+        onOpenChange={setRefundOpen}
+        payment={selectedPayment}
+        onConfirm={handleRefund}
+        isPending={isRefunding}
+      />
     </div>
   )
 }

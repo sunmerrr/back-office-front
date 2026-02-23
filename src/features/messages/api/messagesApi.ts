@@ -14,7 +14,7 @@ function mapNotice(raw: any): Notice {
     imagePath: raw.imagePath || raw.imageUrl || undefined,
     sent: raw.status === 'SENT',
     all: raw.all ?? (raw.target === 'ALL'),
-    scheduledTimestamp: raw.scheduledAt ? new Date(raw.scheduledAt).getTime() : 0,
+    scheduledTimestamp: raw.scheduledAt ? Number(raw.scheduledAt) : 0,
     groups: raw.groups || undefined,
     createdAt: raw.createdAt,
   }
@@ -53,7 +53,7 @@ export const messagesApi = {
       groups: data.groups,
     }
     if (data.scheduledTimestamp) {
-      body.scheduledAt = new Date(data.scheduledTimestamp).toISOString()
+      body.scheduledAt = data.scheduledTimestamp
     }
 
     const raw: any = await authenticatedApiClient.post('message/create', { json: body }).json()
@@ -72,9 +72,7 @@ export const messagesApi = {
     if (data.all !== undefined) body.all = data.all
     if (data.groups !== undefined) body.groups = data.groups
     if (data.scheduledTimestamp !== undefined) {
-      body.scheduledAt = data.scheduledTimestamp
-        ? new Date(data.scheduledTimestamp).toISOString()
-        : null
+      body.scheduledAt = data.scheduledTimestamp || null
     }
 
     const raw: any = await authenticatedApiClient.patch(`message/${id}`, { json: body }).json()

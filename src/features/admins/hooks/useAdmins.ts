@@ -22,7 +22,7 @@ export const useCreateAdmin = () => {
 export const useUpdateAdminRole = () => {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: ({ id, role }: { id: number; role: string }) =>
+    mutationFn: ({ id, role }: { id: string; role: string }) =>
       adminsApi.updateRole(id, role),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admins'] })
@@ -32,7 +32,7 @@ export const useUpdateAdminRole = () => {
 
 export const useResetPassword = () => {
   return useMutation({
-    mutationFn: ({ id, data }: { id: number; data: ResetPasswordData }) =>
+    mutationFn: ({ id, data }: { id: string; data: ResetPasswordData }) =>
       adminsApi.resetPassword(id, data),
   })
 }
@@ -40,7 +40,7 @@ export const useResetPassword = () => {
 export const useUpdateAdminStatus = () => {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: ({ id, status }: { id: number; status: string }) =>
+    mutationFn: ({ id, status }: { id: string; status: string }) =>
       adminsApi.updateStatus(id, status),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admins'] })

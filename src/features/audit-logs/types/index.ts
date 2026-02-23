@@ -31,8 +31,8 @@ export type AuditTargetType =
   | 'SYSTEM'
 
 export interface AuditLog {
-  id: number
-  adminId: number
+  id: string
+  adminId: string
   adminName: string
   action: AuditAction
   targetType: AuditTargetType
@@ -46,7 +46,7 @@ export interface AuditLog {
 export interface AuditLogListParams {
   page?: number
   limit?: number
-  adminId?: number
+  adminId?: string
   action?: AuditAction
   targetType?: AuditTargetType
   targetId?: string

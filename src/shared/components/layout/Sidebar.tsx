@@ -11,7 +11,9 @@ import {
   LayoutDashboard,
   Settings,
   ChevronRight,
-  ChevronLeft
+  ChevronLeft,
+  Megaphone,
+  ShoppingBag
 } from 'lucide-react'
 import { cn } from '@/shared/utils/cn'
 import { Button } from '@/shared/components/ui/button'
@@ -32,6 +34,8 @@ const navigation: NavItem[] = [
   { name: '티켓 관리', path: '/tickets', icon: Ticket },
   { name: '토너먼트', path: '/tournaments', icon: Trophy },
   { name: '결제 내역', path: '/payments', icon: DollarSign },
+  { name: '공지 관리', path: '/announcements', icon: Megaphone, permission: 'settings:manage' },
+  { name: '상점 관리', path: '/shop', icon: ShoppingBag, permission: 'settings:manage' },
   { name: '감사 로그', path: '/audit-logs', icon: FileText, permission: 'audit:read' },
   { name: '관리자 관리', path: '/admins', icon: Shield, permission: 'settings:manage' },
   { name: '시스템 설정', path: '/settings', icon: Settings, permission: 'settings:manage' },

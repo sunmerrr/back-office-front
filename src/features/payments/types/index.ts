@@ -4,11 +4,11 @@ export interface Payment {
   userName?: string
   email?: string
   product: string
-  amount: number
+  amount: string
   currency: string
   method?: string
   status: string
-  paidAt: string
+  paidAt: number
   createdAt: string
 }
 
@@ -22,7 +22,7 @@ export interface PaymentListParams {
 }
 
 export interface PaymentStats {
-  totalAmount: number
+  totalAmount: string
   totalCount: number
-  daily: { date: string; amount: number; count: number }[]
+  daily: { date: string; amount: string; count: number }[]
 }

@@ -12,8 +12,8 @@ function mapTicket(raw: any): Ticket {
     amount: raw.amount,
     sentAmount: raw.sentAmount ?? raw._count?.grants ?? 0,
     pendingAmount: raw.pendingAmount ?? 0,
-    startTimestamp: raw.startAt ? new Date(raw.startAt).getTime() : undefined,
-    expiredTimestamp: raw.expiresAt ? new Date(raw.expiresAt).getTime() : undefined,
+    startTimestamp: raw.startAt ? Number(raw.startAt) : undefined,
+    expiredTimestamp: raw.expiresAt ? Number(raw.expiresAt) : undefined,
     games: raw.games || undefined,
     userId: raw.userId ? String(raw.userId) : '',
     createdAt: raw.createdAt,
@@ -26,7 +26,7 @@ function mapTicketHistory(raw: any): TicketHistory {
   return {
     id: String(raw.id),
     owner: raw.adminId ? String(raw.adminId) : '',
-    scheduledTimestamp: raw.scheduledAt ? new Date(raw.scheduledAt).getTime() : 0,
+    scheduledTimestamp: raw.scheduledAt ? Number(raw.scheduledAt) : 0,
     ticket: raw.ticket ? mapTicket(raw.ticket) : ({} as Ticket),
     sent: raw.sent ?? false,
     all: raw.all ?? true,
@@ -84,8 +84,8 @@ export const ticketsApi = {
       amount: data.amount,
       games: data.games,
     }
-    if (data.startTimestamp) body.startAt = new Date(data.startTimestamp).toISOString()
-    if (data.expiredTimestamp) body.expiresAt = new Date(data.expiredTimestamp).toISOString()
+    if (data.startTimestamp) body.startAt = data.startTimestamp
+    if (data.expiredTimestamp) body.expiresAt = data.expiredTimestamp
 
     const raw: any = await authenticatedApiClient.post('ticket/create', { json: body }).json()
     return mapTicket(raw)
@@ -98,8 +98,8 @@ export const ticketsApi = {
     if (data.value !== undefined) body.value = data.value
     if (data.amount !== undefined) body.amount = data.amount
     if (data.games !== undefined) body.games = data.games
-    if (data.startTimestamp !== undefined) body.startAt = data.startTimestamp ? new Date(data.startTimestamp).toISOString() : null
-    if (data.expiredTimestamp !== undefined) body.expiresAt = data.expiredTimestamp ? new Date(data.expiredTimestamp).toISOString() : null
+    if (data.startTimestamp !== undefined) body.startAt = data.startTimestamp || null
+    if (data.expiredTimestamp !== undefined) body.expiresAt = data.expiredTimestamp || null
 
     const raw: any = await authenticatedApiClient.patch(`ticket/${id}`, { json: body }).json()
     return mapTicket(raw)

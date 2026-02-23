@@ -16,15 +16,15 @@ export const adminsApi = {
     return authenticatedApiClient.post('admin/create', { json: data }).json()
   },
 
-  updateRole: async (id: number, role: string): Promise<Admin> => {
+  updateRole: async (id: string, role: string): Promise<Admin> => {
     return authenticatedApiClient.patch(`admin/${id}/role`, { json: { role } }).json()
   },
 
-  resetPassword: async (id: number, data: ResetPasswordData): Promise<{ message: string }> => {
+  resetPassword: async (id: string, data: ResetPasswordData): Promise<{ message: string }> => {
     return authenticatedApiClient.patch(`admin/${id}/reset-password`, { json: data }).json()
   },
 
-  updateStatus: async (id: number, status: string): Promise<Admin> => {
+  updateStatus: async (id: string, status: string): Promise<Admin> => {
     return authenticatedApiClient.patch(`admin/${id}/status`, { json: { status } }).json()
   },
 }

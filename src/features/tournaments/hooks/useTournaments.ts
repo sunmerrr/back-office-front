@@ -41,6 +41,17 @@ export const useUpdateTournament = () => {
   })
 }
 
+export const useCopyTournament = () => {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (id: string) => tournamentsApi.copyTournament(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tournaments'] })
+    },
+  })
+}
+
 export const useDeleteTournament = () => {
   const queryClient = useQueryClient()
 
@@ -77,7 +88,7 @@ export const useAddParticipant = () => {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: ({ tournamentId, userId }: { tournamentId: string; userId: number }) =>
+    mutationFn: ({ tournamentId, userId }: { tournamentId: string; userId: string }) =>
       tournamentsApi.addParticipant(tournamentId, userId),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['tournaments', variables.tournamentId, 'participants'] })
@@ -90,7 +101,7 @@ export const useRemoveParticipant = () => {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: ({ tournamentId, userId }: { tournamentId: string; userId: number }) =>
+    mutationFn: ({ tournamentId, userId }: { tournamentId: string; userId: string }) =>
       tournamentsApi.removeParticipant(tournamentId, userId),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['tournaments', variables.tournamentId, 'participants'] })

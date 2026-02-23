@@ -9,7 +9,7 @@ export const useAuditLogs = (params?: AuditLogListParams) => {
   })
 }
 
-export const useAuditLog = (id: number) => {
+export const useAuditLog = (id: string) => {
   return useQuery({
     queryKey: ['audit-logs', id],
     queryFn: () => auditLogsApi.getAuditLog(id),

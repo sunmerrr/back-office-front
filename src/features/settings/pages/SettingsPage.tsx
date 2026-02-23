@@ -1,4 +1,4 @@
-import { FC, useState } from 'react'
+import { FC, useState, useMemo } from 'react'
 import { useSettings, useUpdateSetting } from '../hooks/useSettings'
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
@@ -10,7 +10,8 @@ import {
 } from '@/shared/components/ui/dialog'
 import { Label } from '@/shared/components/ui/label'
 import { Textarea } from '@/shared/components/ui/textarea'
-import { Settings, Pencil, Plus } from 'lucide-react'
+import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card'
+import { Settings, Pencil, Plus, Shield, Trash2 } from 'lucide-react'
 
 export const SettingsPage: FC = () => {
   const { data: settings, isLoading } = useSettings()
@@ -21,6 +22,32 @@ export const SettingsPage: FC = () => {
   const [editValue, setEditValue] = useState('')
   const [isNewSetting, setIsNewSetting] = useState(false)
   const [newKey, setNewKey] = useState('')
+  const [newIp, setNewIp] = useState('')
+
+  // IP Whitelist
+  const ipWhitelist: string[] = useMemo(() => {
+    if (!settings) return []
+    const setting = settings.find((s) => s.key === 'ip_whitelist')
+    if (!setting || !Array.isArray(setting.value)) return []
+    return setting.value as string[]
+  }, [settings])
+
+  const handleAddIp = () => {
+    const ip = newIp.trim()
+    if (!ip) return
+    const updated = [...ipWhitelist, ip]
+    updateSetting(
+      { key: 'ip_whitelist', value: updated },
+      { onSuccess: () => setNewIp('') },
+    )
+  }
+
+  const handleRemoveIp = (index: number) => {
+    const ip = ipWhitelist[index]
+    if (!window.confirm(`"${ip}"를 화이트리스트에서 제거하시겠습니까?`)) return
+    const updated = ipWhitelist.filter((_, i) => i !== index)
+    updateSetting({ key: 'ip_whitelist', value: updated })
+  }
 
   const handleEdit = (key: string, value: any) => {
     setEditKey(key)
@@ -114,6 +141,61 @@ export const SettingsPage: FC = () => {
           </TableBody>
         </Table>
       </div>
+
+      {/* IP 화이트리스트 */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <Shield className="h-5 w-5" />
+            IP 화이트리스트
+          </CardTitle>
+          <p className="text-sm text-gray-500">
+            등록된 IP만 백오피스에 접근할 수 있습니다. 비어있으면 제한 없이 접근 가능합니다.
+          </p>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-3">
+            {ipWhitelist.length > 0 ? (
+              <div className="border rounded-lg divide-y">
+                {ipWhitelist.map((ip, i) => (
+                  <div key={i} className="flex items-center justify-between px-4 py-2">
+                    <span className="font-mono text-sm">{ip}</span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-red-500 hover:text-red-700"
+                      onClick={() => handleRemoveIp(i)}
+                      disabled={isPending}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-gray-400 py-2">등록된 IP가 없습니다. (전체 허용)</p>
+            )}
+            <div className="flex items-center gap-2">
+              <Input
+                value={newIp}
+                onChange={(e) => setNewIp(e.target.value)}
+                placeholder="IP 또는 CIDR (예: 192.168.1.0/24)"
+                className="font-mono max-w-xs"
+                onKeyDown={(e) => e.key === 'Enter' && handleAddIp()}
+              />
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleAddIp}
+                disabled={!newIp.trim() || isPending}
+              >
+                <Plus className="h-4 w-4 mr-1" />
+                추가
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* 편집 다이얼로그 */}
       <Dialog open={editOpen} onOpenChange={setEditOpen}>

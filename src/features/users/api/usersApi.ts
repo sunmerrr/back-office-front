@@ -6,18 +6,20 @@ import type {
   GoldHistoryResponse,
   DiamondHistoryResponse,
   UserTicketListResponse,
-  PaymentHistoryResponse
+  PaymentHistoryResponse,
+  NicknameHistoryItem,
 } from '../types'
 
 // 백엔드 응답 → 프론트 User 타입 매핑
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const mapUser = (u: any): User => ({
   ...u,
+  id: String(u.id),
   userName: u.userName ?? u.nickname ?? u.email ?? '',
   userGameId: u.userGameId ?? String(u.id),
   identifier: u.identifier ?? u.email ?? '',
   banned: u.banned ?? u.status === 'BANNED',
-  bannedUntil: u.bannedUntil ? new Date(u.bannedUntil).getTime() : 0,
+  bannedUntil: u.bannedUntil ? Number(u.bannedUntil) : 0,
   gold: u.gold ?? 0,
   diamond: u.diamond ?? 0,
   adultConfirmed: u.adultConfirmed ?? 0,
@@ -72,19 +74,19 @@ export const usersApi = {
 
   addGold: async (userIds: string[], amount: number, message?: string): Promise<void> => {
     return authenticatedApiClient.post('admin/gold/add', {
-      json: { userIds: userIds.map(Number), amount, message },
+      json: { userIds, amount, message },
     }).json()
   },
 
   subGold: async (userIds: string[], amount: number, message?: string): Promise<void> => {
     return authenticatedApiClient.post('admin/gold/sub', {
-      json: { userIds: userIds.map(Number), amount, message },
+      json: { userIds, amount, message },
     }).json()
   },
 
   emptyGold: async (userIds: string[]): Promise<void> => {
     return authenticatedApiClient.post('admin/gold/empty', {
-      json: { userIds: userIds.map(Number) },
+      json: { userIds },
     }).json()
   },
 
@@ -98,13 +100,13 @@ export const usersApi = {
 
   addDiamond: async (userIds: string[], amount: number, message?: string): Promise<void> => {
     return authenticatedApiClient.post('admin/diamond/add', {
-      json: { userIds: userIds.map(Number), amount, message },
+      json: { userIds, amount, message },
     }).json()
   },
 
   subDiamond: async (userIds: string[], amount: number, message?: string): Promise<void> => {
     return authenticatedApiClient.post('admin/diamond/sub', {
-      json: { userIds: userIds.map(Number), amount, message },
+      json: { userIds, amount, message },
     }).json()
   },
 
@@ -136,5 +138,27 @@ export const usersApi = {
 
   deleteUser: async (id: string): Promise<void> => {
     return authenticatedApiClient.delete(`user/${id}`).json()
+  },
+
+  // ── Nickname ──
+
+  changeNickname: async (id: string, nickname: string, reason: string): Promise<User> => {
+    const res = await authenticatedApiClient.post(`user/${id}/nickname`, {
+      json: { nickname, reason },
+    }).json()
+    return mapUser(res)
+  },
+
+  getNicknameHistory: async (id: string): Promise<NicknameHistoryItem[]> => {
+    const res: any[] = await authenticatedApiClient.get(`user/${id}/nickname-history`).json()
+    return res.map((item: any) => ({
+      id: String(item.id),
+      userId: String(item.userId),
+      oldName: item.oldName,
+      newName: item.newName,
+      changedBy: item.changedBy ? String(item.changedBy) : null,
+      reason: item.reason ?? null,
+      createdAt: item.createdAt,
+    }))
   },
 }

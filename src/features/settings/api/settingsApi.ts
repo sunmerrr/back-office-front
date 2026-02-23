@@ -1,10 +1,10 @@
 import { authenticatedApiClient } from '@/shared/api/interceptor'
 
 export interface SystemSetting {
-  id: number
+  id: string
   key: string
   value: any
-  updatedBy?: number
+  updatedBy?: string
   updatedAt: string
 }
 

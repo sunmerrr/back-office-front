@@ -8,11 +8,11 @@ function mapPayment(raw: any): Payment {
     userName: raw.user?.nickname || raw.user?.email || '',
     email: raw.user?.email || '',
     product: raw.product || '',
-    amount: raw.amount || 0,
+    amount: String(raw.amount ?? '0'),
     currency: raw.currency || 'KRW',
     method: raw.method || undefined,
     status: raw.status || 'COMPLETED',
-    paidAt: raw.paidAt || '',
+    paidAt: Number(raw.paidAt),
     createdAt: raw.createdAt || '',
   }
 }
@@ -32,6 +32,11 @@ export const paymentsApi = {
       items: (response.data || []).map(mapPayment),
       total: response.meta?.total || 0,
     }
+  },
+
+  refundPayment: async (id: string, reason: string): Promise<Payment> => {
+    const raw: any = await authenticatedApiClient.post(`payment/${id}/refund`, { json: { reason } }).json()
+    return mapPayment(raw)
   },
 
   getStats: async (params?: { startDate?: string; endDate?: string }): Promise<PaymentStats> => {
