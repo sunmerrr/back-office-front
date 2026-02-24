@@ -8,6 +8,7 @@ import { Label } from '@/shared/components/ui/label'
 import { Textarea } from '@/shared/components/ui/textarea'
 import { MessageSquare, Send } from 'lucide-react'
 import { useCreateNotice, useUploadNoticeImage } from '@/features/messages/hooks/useMessages'
+import { extractApiError } from '@/shared/utils/error'
 import { DateTimePicker } from '@/shared/components/ui/date-time-picker'
 import { ImageUploader } from '@/shared/components/ui/image-uploader'
 import { DATE_PRESETS } from '@/shared/constants/date-presets'
@@ -85,8 +86,8 @@ export const UserSendTab: FC<UserSendTabProps> = ({ userId, userName }) => {
             now.setSeconds(0, 0)
             form.setFieldValue('scheduledDate', now)
           },
-          onError: (err: any) => {
-            alert(`발송 실패: ${err.message || '알 수 없는 오류'}`)
+          onError: async (err: unknown) => {
+            alert(`발송 실패: ${await extractApiError(err, '알 수 없는 오류')}`)
           }
         })
       }

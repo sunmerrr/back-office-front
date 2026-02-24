@@ -8,6 +8,7 @@ import {
 import { Input } from '@/shared/components/ui/input'
 import { Button } from '@/shared/components/ui/button'
 import { useResetPassword } from '../hooks/useAdmins'
+import { extractApiError } from '@/shared/utils/error'
 import type { Admin } from '../types'
 
 interface ResetPasswordDialogProps {
@@ -50,8 +51,8 @@ export const ResetPasswordDialog: FC<ResetPasswordDialogProps> = ({
           setSuccess(true)
           setError('')
         },
-        onError: (err: any) => {
-          setError(err?.message || '비밀번호 초기화에 실패했습니다.')
+        onError: async (err: unknown) => {
+          setError(await extractApiError(err, '비밀번호 초기화에 실패했습니다.'))
           setSuccess(false)
         },
       }

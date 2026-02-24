@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { ChevronsUpDown, Check, X } from 'lucide-react'
 import { useTicket, useSendTicket } from '../hooks/useTickets'
+import { extractApiError } from '@/shared/utils/error'
 import { useSearchGroups } from '@/features/users/hooks/useGroups'
 import { useDebounce } from '@/shared/hooks/useDebounce'
 import { cn } from '@/shared/utils/cn'
@@ -87,8 +88,8 @@ export const GrantTicketDialog = ({ open, onOpenChange, ticketId }: GrantTicketD
         setIsAllUsers(false)
         setScheduledDate(new Date())
       },
-      onError: (err: any) => {
-        alert(`발송 실패: ${err.message || '알 수 없는 오류'}`)
+      onError: async (err: unknown) => {
+        alert(`발송 실패: ${await extractApiError(err, '알 수 없는 오류')}`)
       }
     })
   }

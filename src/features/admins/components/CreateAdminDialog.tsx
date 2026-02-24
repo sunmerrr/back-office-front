@@ -15,6 +15,7 @@ import {
   SelectValue,
 } from '@/shared/components/ui/select'
 import { useCreateAdmin } from '../hooks/useAdmins'
+import { extractApiError } from '@/shared/utils/error'
 
 interface CreateAdminDialogProps {
   open: boolean
@@ -61,8 +62,8 @@ export const CreateAdminDialog: FC<CreateAdminDialogProps> = ({
           resetForm()
           onOpenChange(false)
         },
-        onError: (err: any) => {
-          setError(err?.message || '계정 생성에 실패했습니다.')
+        onError: async (err: unknown) => {
+          setError(await extractApiError(err, '계정 생성에 실패했습니다.'))
         },
       }
     )

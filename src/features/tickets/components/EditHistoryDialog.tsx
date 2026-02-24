@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { ChevronsUpDown, Check, X } from 'lucide-react'
 import { useUpdateTicketHistory, useTicketHistoryDetail } from '../hooks/useTickets'
+import { extractApiError } from '@/shared/utils/error'
 import { useSearchGroups } from '@/features/users/hooks/useGroups'
 import { useDebounce } from '@/shared/hooks/useDebounce'
 import { cn } from '@/shared/utils/cn'
@@ -90,8 +91,8 @@ export const EditHistoryDialog = ({ open, onOpenChange, historyId }: EditHistory
       onSuccess: () => {
         onOpenChange(false)
       },
-      onError: (err: any) => {
-        alert(`수정 실패: ${err.message}`)
+      onError: async (err: unknown) => {
+        alert(`수정 실패: ${await extractApiError(err, '알 수 없는 오류')}`)
       }
     })
   }

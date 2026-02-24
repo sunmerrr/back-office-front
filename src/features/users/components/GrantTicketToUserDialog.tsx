@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { ChevronsUpDown, Check } from 'lucide-react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useTickets, useSendTicket } from '@/features/tickets/hooks/useTickets'
+import { extractApiError } from '@/shared/utils/error'
 import { useDebounce } from '@/shared/hooks/useDebounce'
 import {
   Dialog,
@@ -76,8 +77,8 @@ export const GrantTicketToUserDialog = ({ open, onOpenChange, userId, userName }
         setSelectedTicketId(null)
         setScheduledDate(new Date())
       },
-      onError: (err: any) => {
-        alert(`발송 실패: ${err.message || '알 수 없는 오류'}`)
+      onError: async (err: unknown) => {
+        alert(`발송 실패: ${await extractApiError(err, '알 수 없는 오류')}`)
       }
     })
   }
