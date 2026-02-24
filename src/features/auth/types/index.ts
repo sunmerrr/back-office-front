@@ -9,6 +9,11 @@ export interface LoginResponse {
   user: User
 }
 
+export interface RefreshResponse {
+  accessToken: string
+  refreshToken: string
+}
+
 export interface User {
   id: string
   email: string

@@ -36,9 +36,6 @@ export const LoginPage = () => {
       
       setTokens(response.accessToken, response.refreshToken)
       setUser(response.user)
-      
-      localStorage.setItem('accessToken', response.accessToken)
-      localStorage.setItem('refreshToken', response.refreshToken)
 
       navigate({ to: '/users' })
     } catch (err: any) {
