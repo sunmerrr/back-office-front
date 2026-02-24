@@ -112,8 +112,8 @@ export const usersApi = {
 
   // ── User CRUD ──
 
-  createUser: async (data: Partial<User>): Promise<User> => {
-    return authenticatedApiClient.post('user', { json: data }).json()
+  createUser: async (data: { email: string; nickname: string; password: string; role: string }): Promise<User> => {
+    return authenticatedApiClient.post('user/create', { json: data }).json()
   },
 
   updateUser: async (id: string, data: Partial<User>): Promise<User> => {

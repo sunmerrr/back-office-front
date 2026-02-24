@@ -21,7 +21,8 @@ export const useCreateUser = () => {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: (data: Partial<User>) => usersApi.createUser(data),
+    mutationFn: (data: { email: string; nickname: string; password: string; role: string }) =>
+      usersApi.createUser(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['users'] })
     },

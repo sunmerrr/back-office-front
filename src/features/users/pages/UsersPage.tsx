@@ -36,12 +36,14 @@ import {
 import { useDebounce } from '@/shared/hooks/useDebounce'
 import { ROLES } from '../types/UserRole'
 import { usePermission } from '@/shared/hooks/usePermission'
+import { CreateUserDialog } from '../components/CreateUserDialog'
 
 export const UsersPage: FC = () => {
   const navigate = useNavigate()
   const [page, setPage] = useState(1)
   const [limit] = useState(20)
   const [search, setSearch] = useState('')
+  const [createDialogOpen, setCreateDialogOpen] = useState(false)
   const debouncedSearch = useDebounce(search, 500)
 
   const { data, isLoading, error } = useUsers({
@@ -102,7 +104,7 @@ export const UsersPage: FC = () => {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold">회원 관리</h1>
-        <Button>회원 등록</Button>
+        <Button onClick={() => setCreateDialogOpen(true)}>회원 등록</Button>
       </div>
 
       <div className="flex items-center gap-4 bg-white p-4 rounded-lg border shadow-sm">
@@ -171,7 +173,7 @@ export const UsersPage: FC = () => {
                   <TableCell className="text-center" onClick={(e) => e.stopPropagation()}>
                     {hasPermission('user:role') ? (
                       <Select
-                        defaultValue={user.role}
+                        value={user.role}
                         onValueChange={(value) => handleRoleChange(user.id, value)}
                         disabled={isActionPending}
                       >
@@ -308,6 +310,7 @@ export const UsersPage: FC = () => {
           </PaginationContent>
         </Pagination>
       )}
+      <CreateUserDialog open={createDialogOpen} onOpenChange={setCreateDialogOpen} />
     </div>
   )
 }
