@@ -18,6 +18,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/shared/components/ui/select'
+import { ImageUploader } from '@/shared/components/ui/image-uploader'
+import { useUploadAnnouncementImage } from '../hooks/useAnnouncements'
 import type { CreateAnnouncementData, AnnouncementType } from '../types'
 
 interface CreateAnnouncementDialogProps {
@@ -33,19 +35,23 @@ export const CreateAnnouncementDialog: FC<CreateAnnouncementDialogProps> = ({
   onConfirm,
   isPending,
 }) => {
+  const { mutateAsync: uploadImage } = useUploadAnnouncementImage()
   const [type, setType] = useState<AnnouncementType>('BANNER')
   const [title, setTitle] = useState('')
   const [content, setContent] = useState('')
-  const [imagePath, setImagePath] = useState('')
+  const [imageFile, setImageFile] = useState<File | null>(null)
+  const [imagePreview, setImagePreview] = useState('')
   const [startAt, setStartAt] = useState('')
   const [endAt, setEndAt] = useState('')
   const [sortOrder, setSortOrder] = useState('0')
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   const resetState = () => {
     setType('BANNER')
     setTitle('')
     setContent('')
-    setImagePath('')
+    setImageFile(null)
+    setImagePreview('')
     setStartAt('')
     setEndAt('')
     setSortOrder('0')
@@ -58,22 +64,35 @@ export const CreateAnnouncementDialog: FC<CreateAnnouncementDialogProps> = ({
 
   const isValid = title.trim().length > 0 && startAt
 
-  const handleConfirm = () => {
+  const handleConfirm = async () => {
     if (!isValid) return
 
-    const data: CreateAnnouncementData = {
-      type,
-      title: title.trim(),
-      startAt: new Date(startAt).getTime(),
-      sortOrder: Number(sortOrder) || 0,
+    setIsSubmitting(true)
+    try {
+      let imagePath = ''
+      if (imageFile) {
+        const res = await uploadImage(imageFile)
+        imagePath = res.url
+      }
+
+      const data: CreateAnnouncementData = {
+        type,
+        title: title.trim(),
+        startAt: new Date(startAt).getTime(),
+        sortOrder: Number(sortOrder) || 0,
+      }
+
+      if (content.trim()) data.content = content.trim()
+      if (imagePath) data.imagePath = imagePath
+      if (endAt) data.endAt = new Date(endAt).getTime()
+
+      onConfirm(data)
+      resetState()
+    } catch {
+      alert('이미지 업로드에 실패했습니다.')
+    } finally {
+      setIsSubmitting(false)
     }
-
-    if (content.trim()) data.content = content.trim()
-    if (imagePath.trim()) data.imagePath = imagePath.trim()
-    if (endAt) data.endAt = new Date(endAt).getTime()
-
-    onConfirm(data)
-    resetState()
   }
 
   return (
@@ -119,11 +138,18 @@ export const CreateAnnouncementDialog: FC<CreateAnnouncementDialogProps> = ({
           </div>
 
           <div className="space-y-2">
-            <Label>이미지 경로</Label>
-            <Input
-              value={imagePath}
-              onChange={(e) => setImagePath(e.target.value)}
-              placeholder="/images/announcements/..."
+            <Label>이미지</Label>
+            <ImageUploader
+              value={imagePreview}
+              onChange={(file) => {
+                setImageFile(file)
+                setImagePreview(URL.createObjectURL(file))
+              }}
+              onRemove={() => {
+                setImageFile(null)
+                setImagePreview('')
+              }}
+              maxSizeInMB={5}
             />
           </div>
 
@@ -165,8 +191,8 @@ export const CreateAnnouncementDialog: FC<CreateAnnouncementDialogProps> = ({
           <Button variant="outline" onClick={() => handleOpenChange(false)}>
             취소
           </Button>
-          <Button onClick={handleConfirm} disabled={!isValid || isPending}>
-            {isPending ? '생성 중...' : '생성'}
+          <Button onClick={handleConfirm} disabled={!isValid || isPending || isSubmitting}>
+            {isPending || isSubmitting ? '생성 중...' : '생성'}
           </Button>
         </DialogFooter>
       </DialogContent>

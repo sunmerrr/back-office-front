@@ -62,22 +62,13 @@ export const MessageFormDialog = ({ open, onOpenChange, noticeId }: MessageFormD
   
   const { mutate: createNotice, isPending: isCreating } = useCreateNotice()
   const { mutate: updateNotice, isPending: isUpdating } = useUpdateNotice()
-  const { mutate: uploadImage, isPending: isUploading } = useUploadNoticeImage()
+  const { mutateAsync: uploadImage } = useUploadNoticeImage()
   const { data: groupsResponse, isLoading: isLoadingGroups } = useSearchGroups(debouncedSearchTerm)
+  const [imageFile, setImageFile] = useState<File | null>(null)
+  const [imagePreview, setImagePreview] = useState('')
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   const groups = groupsResponse?.data || []
-
-  const handleImageUpload = (file: File) => {
-    uploadImage(file, {
-      onSuccess: (response) => {
-        form.setFieldValue('imagePath', response.url)
-      },
-      onError: (err) => {
-        alert('이미지 업로드에 실패했습니다.')
-        console.error(err)
-      }
-    })
-  }
 
   const form = useForm({
     defaultValues: {
@@ -88,8 +79,9 @@ export const MessageFormDialog = ({ open, onOpenChange, noticeId }: MessageFormD
       descriptionEn: '',
       descriptionJa: '',
       scheduledDate: undefined as Date | undefined,
-      targetType: 'all' as 'all' | 'group' | 'user',
+      targetType: 'all' as 'all' | 'group' | 'uid',
       selectedGroups: [] as UserGroup[],
+      uidInput: '',
       imagePath: '',
     },
     // @ts-ignore
@@ -102,36 +94,59 @@ export const MessageFormDialog = ({ open, onOpenChange, noticeId }: MessageFormD
         alert('최소 1개 이상의 그룹을 선택해야 합니다.')
         return
       }
-
-      // Sync EN, JA with KO if they are not exposed in UI
-      const data = {
-        titleKo: value.titleKo,
-        titleEn: value.titleKo,
-        titleJa: value.titleKo,
-        descriptionKo: value.descriptionKo,
-        descriptionEn: value.descriptionKo,
-        descriptionJa: value.descriptionKo,
-        imagePath: value.imagePath,
-        all: value.targetType === 'all',
-        groups: value.targetType === 'all' ? [] : value.selectedGroups.map(g => g.id),
-        sent: false,
-        scheduledTimestamp: value.scheduledDate ? value.scheduledDate.getTime() : Date.now(),
+      const parsedUids = value.uidInput
+        .split(/[,\n]+/)
+        .map((s: string) => s.trim())
+        .filter(Boolean)
+      if (value.targetType === 'uid' && parsedUids.length === 0) {
+        alert('UID를 최소 1개 이상 입력해야 합니다.')
+        return
       }
 
-      if (notice && !isSent) {
-        updateNotice({ id: notice.id, data }, {
-          onSuccess: () => {
-            alert('메시지가 수정되었습니다.')
-            onOpenChange(false)
-          }
-        })
-      } else {
-        createNotice(data, {
-          onSuccess: () => {
-            alert(isSent ? '메시지가 새로 등록되었습니다.' : '메시지가 등록되었습니다.')
-            onOpenChange(false)
-          }
-        })
+      setIsSubmitting(true)
+      try {
+        let imagePath = value.imagePath
+        if (imageFile) {
+          const res = await uploadImage(imageFile)
+          imagePath = res.url
+        }
+
+        const data: any = {
+          titleKo: value.titleKo,
+          titleEn: value.titleKo,
+          titleJa: value.titleKo,
+          descriptionKo: value.descriptionKo,
+          descriptionEn: value.descriptionKo,
+          descriptionJa: value.descriptionKo,
+          imagePath,
+          all: value.targetType === 'all',
+          groups: value.targetType === 'group' ? value.selectedGroups.map(g => g.id) : [],
+          sent: false,
+          scheduledTimestamp: value.scheduledDate ? value.scheduledDate.getTime() : Date.now(),
+        }
+        if (value.targetType === 'uid') {
+          data.recipientIds = parsedUids
+        }
+
+        if (notice && !isSent) {
+          updateNotice({ id: notice.id, data }, {
+            onSuccess: () => {
+              alert('메시지가 수정되었습니다.')
+              onOpenChange(false)
+            }
+          })
+        } else {
+          createNotice(data, {
+            onSuccess: () => {
+              alert(isSent ? '메시지가 새로 등록되었습니다.' : '메시지가 등록되었습니다.')
+              onOpenChange(false)
+            }
+          })
+        }
+      } catch {
+        alert('이미지 업로드에 실패했습니다.')
+      } finally {
+        setIsSubmitting(false)
       }
     },
   })
@@ -154,11 +169,14 @@ export const MessageFormDialog = ({ open, onOpenChange, noticeId }: MessageFormD
           scheduledDate: defaultDate,
           targetType: notice.all ? 'all' : 'group',
           selectedGroups: groups,
+          uidInput: '',
         })
+        setImagePreview(notice.imagePath || '')
+        setImageFile(null)
       } else if (!noticeId) {
         const now = new Date()
         now.setSeconds(0, 0)
-        
+
         form.reset({
           titleKo: '',
           titleEn: '',
@@ -170,12 +188,15 @@ export const MessageFormDialog = ({ open, onOpenChange, noticeId }: MessageFormD
           scheduledDate: now,
           targetType: 'all',
           selectedGroups: [],
+          uidInput: '',
         })
+        setImagePreview('')
+        setImageFile(null)
       }
     }
   }, [open, noticeId, notice, form, isSent])
 
-  const isPending = isCreating || isUpdating || isUploading
+  const isPending = isCreating || isUpdating || isSubmitting
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -247,13 +268,19 @@ export const MessageFormDialog = ({ open, onOpenChange, noticeId }: MessageFormD
                 children={(field) => (
                   <FormField field={field}>
                     <FormItem>
-                      <Label>이미지 ({isUploading ? '업로드 중...' : '선택'})</Label>
+                      <Label>이미지</Label>
                       <FormControl>
-                        <ImageUploader 
-                          value={field.state.value || ''}
-                          onChange={handleImageUpload}
-                          onRemove={() => field.handleChange('')}
-                          disabled={isUploading}
+                        <ImageUploader
+                          value={imagePreview}
+                          onChange={(file) => {
+                            setImageFile(file)
+                            setImagePreview(URL.createObjectURL(file))
+                          }}
+                          onRemove={() => {
+                            setImageFile(null)
+                            setImagePreview('')
+                            field.handleChange('')
+                          }}
                           maxSizeInMB={5}
                         />
                       </FormControl>
@@ -301,24 +328,71 @@ export const MessageFormDialog = ({ open, onOpenChange, noticeId }: MessageFormD
                   children={(field) => (
                     <FormField field={field}>
                       <FormItem>
-                        <div className="flex items-center space-x-2 border rounded-md p-3 h-[42px] bg-gray-50 mb-2">
-                          <Checkbox 
-                            id="all-users" 
-                            checked={field.state.value === 'all'} 
-                            onCheckedChange={(checked) => field.handleChange(checked ? 'all' : 'group')} 
-                          />
-                          <label 
-                            htmlFor="all-users" 
-                            className="text-sm font-medium leading-none cursor-pointer"
-                          >
-                            전체 사용자에게 발송
-                          </label>
+                        <div className="space-y-2 border rounded-md p-3 bg-gray-50 mb-2">
+                          <div className="flex items-center space-x-2">
+                            <Checkbox
+                              id="target-all"
+                              checked={field.state.value === 'all'}
+                              onCheckedChange={(checked) => checked && field.handleChange('all')}
+                            />
+                            <label htmlFor="target-all" className="text-sm font-medium leading-none cursor-pointer">
+                              전체 사용자
+                            </label>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <Checkbox
+                              id="target-group"
+                              checked={field.state.value === 'group'}
+                              onCheckedChange={(checked) => checked && field.handleChange('group')}
+                            />
+                            <label htmlFor="target-group" className="text-sm font-medium leading-none cursor-pointer">
+                              그룹 선택
+                            </label>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <Checkbox
+                              id="target-uid"
+                              checked={field.state.value === 'uid'}
+                              onCheckedChange={(checked) => checked && field.handleChange('uid')}
+                            />
+                            <label htmlFor="target-uid" className="text-sm font-medium leading-none cursor-pointer">
+                              UID 직접 입력
+                            </label>
+                          </div>
                         </div>
                       </FormItem>
                     </FormField>
                   )}
                 />
                 
+                <form.Subscribe
+                  selector={(state) => state.values.targetType}
+                  children={(targetType) => targetType === 'uid' && (
+                    <form.Field
+                      name="uidInput"
+                      children={(field) => {
+                        const parsedUids = (field.state.value || '')
+                          .split(/[,\n]+/)
+                          .map((s: string) => s.trim())
+                          .filter(Boolean)
+                        return (
+                          <div className="space-y-2">
+                            <Textarea
+                              value={field.state.value}
+                              onChange={(e) => field.handleChange(e.target.value)}
+                              placeholder={'UID를 쉼표 또는 줄바꿈으로 구분하여 입력\n예: 1001, 1002, 1003'}
+                              rows={4}
+                            />
+                            <p className="text-xs text-muted-foreground">
+                              입력된 UID: <span className="font-medium text-blue-600">{parsedUids.length}건</span>
+                            </p>
+                          </div>
+                        )
+                      }}
+                    />
+                  )}
+                />
+
                 <form.Subscribe
                   selector={(state) => state.values.targetType}
                   children={(targetType) => targetType === 'group' && (

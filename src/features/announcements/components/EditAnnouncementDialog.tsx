@@ -18,6 +18,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/shared/components/ui/select'
+import { ImageUploader } from '@/shared/components/ui/image-uploader'
+import { useUploadAnnouncementImage } from '../hooks/useAnnouncements'
 import type { Announcement, AnnouncementType, CreateAnnouncementData } from '../types'
 
 interface EditAnnouncementDialogProps {
@@ -43,21 +45,27 @@ export const EditAnnouncementDialog: FC<EditAnnouncementDialogProps> = ({
   onConfirm,
   isPending,
 }) => {
+  const { mutateAsync: uploadImage } = useUploadAnnouncementImage()
   const [type, setType] = useState<AnnouncementType>('BANNER')
   const [title, setTitle] = useState('')
   const [content, setContent] = useState('')
-  const [imagePath, setImagePath] = useState('')
+  const [imageFile, setImageFile] = useState<File | null>(null)
+  const [imagePreview, setImagePreview] = useState('')
+  const [existingImagePath, setExistingImagePath] = useState('')
   const [startAt, setStartAt] = useState('')
   const [endAt, setEndAt] = useState('')
   const [sortOrder, setSortOrder] = useState('0')
   const [status, setStatus] = useState<Announcement['status']>('SCHEDULED')
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   useEffect(() => {
     if (announcement && open) {
       setType(announcement.type)
       setTitle(announcement.title)
       setContent(announcement.content || '')
-      setImagePath(announcement.imagePath || '')
+      setExistingImagePath(announcement.imagePath || '')
+      setImagePreview(announcement.imagePath || '')
+      setImageFile(null)
       setStartAt(tsToDatetimeLocal(announcement.startAt))
       setEndAt(tsToDatetimeLocal(announcement.endAt))
       setSortOrder(String(announcement.sortOrder))
@@ -71,24 +79,37 @@ export const EditAnnouncementDialog: FC<EditAnnouncementDialogProps> = ({
 
   const isValid = title.trim().length > 0 && startAt
 
-  const handleConfirm = () => {
+  const handleConfirm = async () => {
     if (!isValid) return
 
-    const data: Partial<CreateAnnouncementData & { status: Announcement['status'] }> = {
-      type,
-      title: title.trim(),
-      startAt: new Date(startAt).getTime(),
-      sortOrder: Number(sortOrder) || 0,
-      status,
+    setIsSubmitting(true)
+    try {
+      let imagePath = existingImagePath
+      if (imageFile) {
+        const res = await uploadImage(imageFile)
+        imagePath = res.url
+      }
+
+      const data: Partial<CreateAnnouncementData & { status: Announcement['status'] }> = {
+        type,
+        title: title.trim(),
+        startAt: new Date(startAt).getTime(),
+        sortOrder: Number(sortOrder) || 0,
+        status,
+      }
+
+      if (content.trim()) data.content = content.trim()
+      else data.content = undefined
+      if (imagePath) data.imagePath = imagePath
+      else data.imagePath = undefined
+      if (endAt) data.endAt = new Date(endAt).getTime()
+
+      onConfirm(data)
+    } catch {
+      alert('이미지 업로드에 실패했습니다.')
+    } finally {
+      setIsSubmitting(false)
     }
-
-    if (content.trim()) data.content = content.trim()
-    else data.content = undefined
-    if (imagePath.trim()) data.imagePath = imagePath.trim()
-    else data.imagePath = undefined
-    if (endAt) data.endAt = new Date(endAt).getTime()
-
-    onConfirm(data)
   }
 
   return (
@@ -149,11 +170,19 @@ export const EditAnnouncementDialog: FC<EditAnnouncementDialogProps> = ({
           </div>
 
           <div className="space-y-2">
-            <Label>이미지 경로</Label>
-            <Input
-              value={imagePath}
-              onChange={(e) => setImagePath(e.target.value)}
-              placeholder="/images/announcements/..."
+            <Label>이미지</Label>
+            <ImageUploader
+              value={imagePreview}
+              onChange={(file) => {
+                setImageFile(file)
+                setImagePreview(URL.createObjectURL(file))
+              }}
+              onRemove={() => {
+                setImageFile(null)
+                setImagePreview('')
+                setExistingImagePath('')
+              }}
+              maxSizeInMB={5}
             />
           </div>
 
@@ -194,8 +223,8 @@ export const EditAnnouncementDialog: FC<EditAnnouncementDialogProps> = ({
           <Button variant="outline" onClick={() => handleOpenChange(false)}>
             취소
           </Button>
-          <Button onClick={handleConfirm} disabled={!isValid || isPending}>
-            {isPending ? '수정 중...' : '수정'}
+          <Button onClick={handleConfirm} disabled={!isValid || isPending || isSubmitting}>
+            {isPending || isSubmitting ? '수정 중...' : '수정'}
           </Button>
         </DialogFooter>
       </DialogContent>

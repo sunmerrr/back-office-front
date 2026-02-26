@@ -11,6 +11,8 @@ import { Button } from '@/shared/components/ui/button'
 import { Input } from '@/shared/components/ui/input'
 import { Label } from '@/shared/components/ui/label'
 import { Textarea } from '@/shared/components/ui/textarea'
+import { ImageUploader } from '@/shared/components/ui/image-uploader'
+import { useUploadShopImage } from '../hooks/useShop'
 import { ProductContentsEditor } from './ProductContentsEditor'
 import type { CreateShopProductData, ShopContentItem } from '../types'
 
@@ -27,21 +29,25 @@ export const CreateProductDialog: FC<CreateProductDialogProps> = ({
   onConfirm,
   isPending,
 }) => {
+  const { mutateAsync: uploadImage } = useUploadShopImage()
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
-  const [imagePath, setImagePath] = useState('')
+  const [imageFile, setImageFile] = useState<File | null>(null)
+  const [imagePreview, setImagePreview] = useState('')
   const [price, setPrice] = useState('')
   const [currency, setCurrency] = useState('KRW')
-  const [contents, setContents] = useState<ShopContentItem[]>([])
+  const [contents, setContents] = useState<ShopContentItem[]>([{ type: 'gold', amount: 0 }])
   const [sortOrder, setSortOrder] = useState('0')
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   const resetState = () => {
     setName('')
     setDescription('')
-    setImagePath('')
+    setImageFile(null)
+    setImagePreview('')
     setPrice('')
     setCurrency('KRW')
-    setContents([])
+    setContents([{ type: 'gold', amount: 0 }])
     setSortOrder('0')
   }
 
@@ -52,22 +58,35 @@ export const CreateProductDialog: FC<CreateProductDialogProps> = ({
 
   const isValid = name.trim().length > 0 && price && contents.length > 0
 
-  const handleConfirm = () => {
+  const handleConfirm = async () => {
     if (!isValid) return
 
-    const data: CreateShopProductData = {
-      name: name.trim(),
-      price,
-      currency,
-      contents,
-      sortOrder: Number(sortOrder) || 0,
+    setIsSubmitting(true)
+    try {
+      let imagePath = ''
+      if (imageFile) {
+        const res = await uploadImage(imageFile)
+        imagePath = res.url
+      }
+
+      const data: CreateShopProductData = {
+        name: name.trim(),
+        price,
+        currency,
+        contents,
+        sortOrder: Number(sortOrder) || 0,
+      }
+
+      if (description.trim()) data.description = description.trim()
+      if (imagePath) data.imagePath = imagePath
+
+      onConfirm(data)
+      resetState()
+    } catch {
+      alert('이미지 업로드에 실패했습니다.')
+    } finally {
+      setIsSubmitting(false)
     }
-
-    if (description.trim()) data.description = description.trim()
-    if (imagePath.trim()) data.imagePath = imagePath.trim()
-
-    onConfirm(data)
-    resetState()
   }
 
   return (
@@ -99,11 +118,18 @@ export const CreateProductDialog: FC<CreateProductDialogProps> = ({
           </div>
 
           <div className="space-y-2">
-            <Label>이미지 경로</Label>
-            <Input
-              value={imagePath}
-              onChange={(e) => setImagePath(e.target.value)}
-              placeholder="/images/shop/..."
+            <Label>이미지</Label>
+            <ImageUploader
+              value={imagePreview}
+              onChange={(file) => {
+                setImageFile(file)
+                setImagePreview(URL.createObjectURL(file))
+              }}
+              onRemove={() => {
+                setImageFile(null)
+                setImagePreview('')
+              }}
+              maxSizeInMB={5}
             />
           </div>
 
@@ -148,8 +174,8 @@ export const CreateProductDialog: FC<CreateProductDialogProps> = ({
           <Button variant="outline" onClick={() => handleOpenChange(false)}>
             취소
           </Button>
-          <Button onClick={handleConfirm} disabled={!isValid || isPending}>
-            {isPending ? '등록 중...' : '등록'}
+          <Button onClick={handleConfirm} disabled={!isValid || isPending || isSubmitting}>
+            {isPending || isSubmitting ? '등록 중...' : '등록'}
           </Button>
         </DialogFooter>
       </DialogContent>

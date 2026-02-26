@@ -11,6 +11,8 @@ import { Button } from '@/shared/components/ui/button'
 import { Input } from '@/shared/components/ui/input'
 import { Label } from '@/shared/components/ui/label'
 import { Textarea } from '@/shared/components/ui/textarea'
+import { ImageUploader } from '@/shared/components/ui/image-uploader'
+import { useUploadShopImage } from '../hooks/useShop'
 import { ProductContentsEditor } from './ProductContentsEditor'
 import type { ShopProduct, CreateShopProductData, ShopContentItem } from '../types'
 
@@ -29,19 +31,25 @@ export const EditProductDialog: FC<EditProductDialogProps> = ({
   onConfirm,
   isPending,
 }) => {
+  const { mutateAsync: uploadImage } = useUploadShopImage()
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
-  const [imagePath, setImagePath] = useState('')
+  const [imageFile, setImageFile] = useState<File | null>(null)
+  const [imagePreview, setImagePreview] = useState('')
+  const [existingImagePath, setExistingImagePath] = useState('')
   const [price, setPrice] = useState('')
   const [currency, setCurrency] = useState('KRW')
   const [contents, setContents] = useState<ShopContentItem[]>([])
   const [sortOrder, setSortOrder] = useState('0')
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   useEffect(() => {
     if (product && open) {
       setName(product.name)
       setDescription(product.description || '')
-      setImagePath(product.imagePath || '')
+      setExistingImagePath(product.imagePath || '')
+      setImagePreview(product.imagePath || '')
+      setImageFile(null)
       setPrice(product.price)
       setCurrency(product.currency)
       setContents(product.contents || [])
@@ -51,21 +59,34 @@ export const EditProductDialog: FC<EditProductDialogProps> = ({
 
   const isValid = name.trim().length > 0 && price && contents.length > 0
 
-  const handleConfirm = () => {
+  const handleConfirm = async () => {
     if (!isValid) return
 
-    const data: Partial<CreateShopProductData> = {
-      name: name.trim(),
-      price,
-      currency,
-      contents,
-      sortOrder: Number(sortOrder) || 0,
+    setIsSubmitting(true)
+    try {
+      let imagePath = existingImagePath
+      if (imageFile) {
+        const res = await uploadImage(imageFile)
+        imagePath = res.url
+      }
+
+      const data: Partial<CreateShopProductData> = {
+        name: name.trim(),
+        price,
+        currency,
+        contents,
+        sortOrder: Number(sortOrder) || 0,
+      }
+
+      if (description.trim()) data.description = description.trim()
+      if (imagePath) data.imagePath = imagePath
+
+      onConfirm(data)
+    } catch {
+      alert('이미지 업로드에 실패했습니다.')
+    } finally {
+      setIsSubmitting(false)
     }
-
-    if (description.trim()) data.description = description.trim()
-    if (imagePath.trim()) data.imagePath = imagePath.trim()
-
-    onConfirm(data)
   }
 
   return (
@@ -97,11 +118,19 @@ export const EditProductDialog: FC<EditProductDialogProps> = ({
           </div>
 
           <div className="space-y-2">
-            <Label>이미지 경로</Label>
-            <Input
-              value={imagePath}
-              onChange={(e) => setImagePath(e.target.value)}
-              placeholder="/images/shop/..."
+            <Label>이미지</Label>
+            <ImageUploader
+              value={imagePreview}
+              onChange={(file) => {
+                setImageFile(file)
+                setImagePreview(URL.createObjectURL(file))
+              }}
+              onRemove={() => {
+                setImageFile(null)
+                setImagePreview('')
+                setExistingImagePath('')
+              }}
+              maxSizeInMB={5}
             />
           </div>
 
@@ -146,8 +175,8 @@ export const EditProductDialog: FC<EditProductDialogProps> = ({
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             취소
           </Button>
-          <Button onClick={handleConfirm} disabled={!isValid || isPending}>
-            {isPending ? '수정 중...' : '수정'}
+          <Button onClick={handleConfirm} disabled={!isValid || isPending || isSubmitting}>
+            {isPending || isSubmitting ? '수정 중...' : '수정'}
           </Button>
         </DialogFooter>
       </DialogContent>

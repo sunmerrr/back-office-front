@@ -22,11 +22,9 @@ export const ImageUploader = ({
   maxSizeInMB = 5 
 }: ImageUploaderProps) => {
   const inputRef = useRef<HTMLInputElement>(null)
-  const [preview, setPreview] = useState<string | null>(value || null)
+  const [localPreview, setLocalPreview] = useState<string | null>(null)
 
-  if (value && value !== preview) {
-    setPreview(value)
-  }
+  const preview = value || localPreview
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -38,13 +36,13 @@ export const ImageUploader = ({
       }
 
       const objectUrl = URL.createObjectURL(file)
-      setPreview(objectUrl)
+      setLocalPreview(objectUrl)
       onChange?.(file)
     }
   }
 
   const handleRemove = () => {
-    setPreview(null)
+    setLocalPreview(null)
     if (inputRef.current) {
       inputRef.current.value = ''
     }
