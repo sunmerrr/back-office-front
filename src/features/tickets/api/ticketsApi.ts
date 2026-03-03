@@ -109,6 +109,7 @@ export const ticketsApi = {
     ticket: string;
     groups?: string[];
     specificUser?: string;
+    userIds?: string[];
     all: boolean;
     scheduledTimestamp: number;
   }): Promise<void> => {

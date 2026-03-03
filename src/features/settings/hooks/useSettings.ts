@@ -19,3 +19,46 @@ export const useUpdateSetting = () => {
     },
   })
 }
+
+// ── IP Whitelist ──
+
+export const useIpWhitelist = () => {
+  return useQuery({
+    queryKey: ['ipWhitelist'],
+    queryFn: () => settingsApi.getIpWhitelist(),
+  })
+}
+
+export const useAddIp = () => {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({ ip, description }: { ip: string; description?: string }) =>
+      settingsApi.addIp(ip, description),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['ipWhitelist'] })
+    },
+  })
+}
+
+export const useRemoveIp = () => {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (ip: string) => settingsApi.removeIp(ip),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['ipWhitelist'] })
+    },
+  })
+}
+
+export const useToggleIpWhitelist = () => {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: () => settingsApi.toggleIpWhitelist(),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['ipWhitelist'] })
+    },
+  })
+}

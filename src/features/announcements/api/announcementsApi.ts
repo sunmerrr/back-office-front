@@ -57,4 +57,13 @@ export const announcementsApi = {
     const raw: any = await authenticatedApiClient.patch(`announcement/${id}/deactivate`).json()
     return mapAnnouncement(raw)
   },
+
+  uploadImage: async (file: File): Promise<{ url: string }> => {
+    const formData = new FormData()
+    formData.append('file', file)
+    const response: any = await authenticatedApiClient.post('images/upload', {
+      body: formData,
+}).json()
+    return { url: response.url || '' }
+  },
 }

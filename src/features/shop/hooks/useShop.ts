@@ -64,3 +64,9 @@ export const useUpdateShopOrder = () => {
     },
   })
 }
+
+export const useUploadShopImage = () => {
+  return useMutation({
+    mutationFn: (file: File) => shopApi.uploadImage(file),
+  })
+}

@@ -34,7 +34,7 @@ import {
 import { CreateProductDialog } from '../components/CreateProductDialog'
 import { EditProductDialog } from '../components/EditProductDialog'
 import type { ShopProduct, CreateShopProductData } from '../types'
-import { Pencil, Trash2, Plus, ToggleLeft, ToggleRight } from 'lucide-react'
+import { Trash2, Plus, ToggleLeft, ToggleRight } from 'lucide-react'
 
 const ACTIVE_OPTIONS = [
   { value: 'all', label: '전체' },
@@ -164,7 +164,7 @@ export const ShopPage: FC = () => {
               </TableRow>
             ) : (
               data?.items.map((p) => (
-                <TableRow key={p.id}>
+                <TableRow key={p.id} className="cursor-pointer hover:bg-muted/50" onClick={() => handleEdit(p)}>
                   <TableCell className="text-center font-medium">{p.id}</TableCell>
                   <TableCell className="font-medium">{p.name}</TableCell>
                   <TableCell className="text-right">
@@ -174,7 +174,7 @@ export const ShopPage: FC = () => {
                     {formatContents(p.contents)}
                   </TableCell>
                   <TableCell className="text-center text-sm">{p.sortOrder}</TableCell>
-                  <TableCell className="text-center">
+                  <TableCell className="text-center" onClick={(e) => e.stopPropagation()}>
                     <button
                       onClick={() => toggleProduct(p.id)}
                       className="inline-flex items-center"
@@ -187,26 +187,16 @@ export const ShopPage: FC = () => {
                       )}
                     </button>
                   </TableCell>
-                  <TableCell className="text-center">
-                    <div className="flex items-center justify-center gap-1">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleEdit(p)}
-                        title="수정"
-                      >
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                        onClick={() => handleDelete(p)}
-                        title="삭제"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
+                  <TableCell className="text-center" onClick={(e) => e.stopPropagation()}>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                      onClick={() => handleDelete(p)}
+                      title="삭제"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
                   </TableCell>
                 </TableRow>
               ))

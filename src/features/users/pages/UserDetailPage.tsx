@@ -1,6 +1,6 @@
 import { FC, useState } from 'react'
 import { useParams, useNavigate } from '@tanstack/react-router'
-import { useUser, useUpdateUserRole, useBanUser, useUnbanUser } from '../hooks/useUsers'
+import { useUser, useUpdateUserRole, useBanUser, useUnbanUser, useUserOverview } from '../hooks/useUsers'
 import { Button } from '@/shared/components/ui/button'
 import { Badge } from '@/shared/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/components/ui/tabs'
@@ -47,6 +47,7 @@ export const UserDetailPage: FC = () => {
   const { mutate: updateRole, isPending: isUpdatingRole } = useUpdateUserRole()
   const { mutate: banUser, isPending: isBanning } = useBanUser()
   const { mutate: unbanUser, isPending: isUnbanning } = useUnbanUser()
+  const { data: overview } = useUserOverview(userId)
 
   if (isUserLoading) return <div className="p-8 text-center text-gray-500">로딩 중...</div>
   if (userError || !user) return <div className="p-8 text-center text-red-500">사용자를 찾을 수 없습니다.</div>
@@ -183,7 +184,7 @@ export const UserDetailPage: FC = () => {
         <div className="md:col-span-1 space-y-6">
           <UserProfileCard user={user} />
           <UserAssetsCard userId={userId} userName={user.userName} />
-          <UserMemoCard />
+          <UserMemoCard userId={userId} />
         </div>
 
         <div className="md:col-span-2">
@@ -200,17 +201,29 @@ export const UserDetailPage: FC = () => {
             </TabsList>
 
             <TabsContent value="overview" className="pt-4">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-3 gap-4">
                 <Card>
                   <CardContent className="pt-6 text-center">
-                    <p className="text-sm text-gray-500">총 게임 횟수</p>
-                    <p className="text-2xl font-bold mt-1">0</p>
+                    <p className="text-sm text-gray-500">총 결제 금액</p>
+                    <p className="text-2xl font-bold mt-1">
+                      {overview ? `${Number(overview.totalPaymentAmount).toLocaleString()} ₩` : '0 ₩'}
+                    </p>
                   </CardContent>
                 </Card>
                 <Card>
                   <CardContent className="pt-6 text-center">
-                    <p className="text-sm text-gray-500">총 충전 금액</p>
-                    <p className="text-2xl font-bold mt-1">0 ₩</p>
+                    <p className="text-sm text-gray-500">티켓 수령 수</p>
+                    <p className="text-2xl font-bold mt-1">
+                      {overview?.ticketGrantCount ?? 0}
+                    </p>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="pt-6 text-center">
+                    <p className="text-sm text-gray-500">골드 로그 수</p>
+                    <p className="text-2xl font-bold mt-1">
+                      {overview?.goldLogCount ?? 0}
+                    </p>
                   </CardContent>
                 </Card>
               </div>
@@ -234,7 +247,7 @@ export const UserDetailPage: FC = () => {
 
             <TabsContent value="games" className="pt-4">
               <div className="p-10 bg-white border rounded-lg text-center text-gray-400 text-sm">
-                최근 게임 기록이 없습니다.
+                게임 서버 연동 후 지원 예정
               </div>
             </TabsContent>
 
@@ -244,7 +257,7 @@ export const UserDetailPage: FC = () => {
 
             <TabsContent value="logs" className="pt-4">
               <div className="p-10 bg-white border rounded-lg text-center text-gray-400 text-sm">
-                접속 및 활동 로그가 없습니다.
+                게임 서버 연동 후 지원 예정
               </div>
             </TabsContent>
           </Tabs>

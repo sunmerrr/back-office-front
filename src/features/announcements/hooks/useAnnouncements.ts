@@ -53,3 +53,9 @@ export const useDeactivateAnnouncement = () => {
     },
   })
 }
+
+export const useUploadAnnouncementImage = () => {
+  return useMutation({
+    mutationFn: (file: File) => announcementsApi.uploadImage(file),
+  })
+}

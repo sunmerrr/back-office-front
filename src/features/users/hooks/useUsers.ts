@@ -224,3 +224,35 @@ export const useNicknameHistory = (userId: string) => {
     enabled: !!userId,
   })
 }
+
+// ── Memo ──
+
+export const useUserMemo = (userId: string) => {
+  return useQuery({
+    queryKey: ['userMemo', userId],
+    queryFn: () => usersApi.getMemo(userId),
+    enabled: !!userId,
+  })
+}
+
+export const useSaveUserMemo = () => {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({ userId, content }: { userId: string; content: string }) =>
+      usersApi.saveMemo(userId, content),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['userMemo', variables.userId] })
+    },
+  })
+}
+
+// ── Overview ──
+
+export const useUserOverview = (userId: string) => {
+  return useQuery({
+    queryKey: ['userOverview', userId],
+    queryFn: () => usersApi.getUserOverview(userId),
+    enabled: !!userId,
+  })
+}

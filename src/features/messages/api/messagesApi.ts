@@ -86,10 +86,9 @@ export const messagesApi = {
   uploadImage: async (file: File): Promise<{ url: string }> => {
     const formData = new FormData()
     formData.append('file', file)
-    formData.append('type', 'post')
     const response: any = await authenticatedApiClient.post('images/upload', {
       body: formData,
-    }).json()
-    return { url: response.data || response.url || '' }
+}).json()
+    return { url: response.url || '' }
   },
 }

@@ -1,5 +1,6 @@
-import { FC, useState, useMemo } from 'react'
-import { useSettings, useUpdateSetting } from '../hooks/useSettings'
+import { FC, useState } from 'react'
+import { useSettings, useUpdateSetting, useIpWhitelist, useAddIp, useRemoveIp, useToggleIpWhitelist } from '../hooks/useSettings'
+import { useGroups, useCreateGroup, useDeleteGroup } from '@/features/users/hooks/useGroups'
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/shared/components/ui/table'
@@ -11,7 +12,8 @@ import {
 import { Label } from '@/shared/components/ui/label'
 import { Textarea } from '@/shared/components/ui/textarea'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card'
-import { Settings, Pencil, Plus, Shield, Trash2 } from 'lucide-react'
+import { Switch } from '@/shared/components/ui/switch'
+import { Settings, Pencil, Plus, Shield, Trash2, Users } from 'lucide-react'
 
 export const SettingsPage: FC = () => {
   const { data: settings, isLoading } = useSettings()
@@ -23,30 +25,52 @@ export const SettingsPage: FC = () => {
   const [isNewSetting, setIsNewSetting] = useState(false)
   const [newKey, setNewKey] = useState('')
   const [newIp, setNewIp] = useState('')
+  const [ipDescription, setIpDescription] = useState('')
+  const [newGroupTitle, setNewGroupTitle] = useState('')
+  const [newGroupDesc, setNewGroupDesc] = useState('')
 
-  // IP Whitelist
-  const ipWhitelist: string[] = useMemo(() => {
-    if (!settings) return []
-    const setting = settings.find((s) => s.key === 'ip_whitelist')
-    if (!setting || !Array.isArray(setting.value)) return []
-    return setting.value as string[]
-  }, [settings])
+  // IP Whitelist (dedicated API)
+  const { data: ipWhitelistData } = useIpWhitelist()
+  const { mutate: addIp, isPending: isAddingIp } = useAddIp()
+  const { mutate: removeIp, isPending: isRemovingIp } = useRemoveIp()
+  const { mutate: toggleWhitelist, isPending: isToggling } = useToggleIpWhitelist()
+
+  const ipWhitelist = ipWhitelistData?.ips || []
+  const ipWhitelistEnabled = ipWhitelistData?.enabled ?? false
+
+  // Groups
+  const { data: groupsData } = useGroups()
+  const { mutate: createGroup, isPending: isCreatingGroup } = useCreateGroup()
+  const { mutate: deleteGroup, isPending: isDeletingGroup } = useDeleteGroup()
+
+  const groups = groupsData?.data || []
+
+  const handleCreateGroup = () => {
+    const title = newGroupTitle.trim()
+    if (!title) return
+    createGroup(
+      { title, description: newGroupDesc.trim() || undefined },
+      { onSuccess: () => { setNewGroupTitle(''); setNewGroupDesc('') } },
+    )
+  }
+
+  const handleDeleteGroup = (id: string, title: string) => {
+    if (!window.confirm(`"${title}" 그룹을 삭제하시겠습니까?`)) return
+    deleteGroup(id)
+  }
 
   const handleAddIp = () => {
     const ip = newIp.trim()
     if (!ip) return
-    const updated = [...ipWhitelist, ip]
-    updateSetting(
-      { key: 'ip_whitelist', value: updated },
-      { onSuccess: () => setNewIp('') },
+    addIp(
+      { ip, description: ipDescription.trim() || undefined },
+      { onSuccess: () => { setNewIp(''); setIpDescription('') } },
     )
   }
 
-  const handleRemoveIp = (index: number) => {
-    const ip = ipWhitelist[index]
+  const handleRemoveIp = (ip: string) => {
     if (!window.confirm(`"${ip}"를 화이트리스트에서 제거하시겠습니까?`)) return
-    const updated = ipWhitelist.filter((_, i) => i !== index)
-    updateSetting({ key: 'ip_whitelist', value: updated })
+    removeIp(ip)
   }
 
   const handleEdit = (key: string, value: any) => {
@@ -145,27 +169,42 @@ export const SettingsPage: FC = () => {
       {/* IP 화이트리스트 */}
       <Card>
         <CardHeader className="pb-3">
-          <CardTitle className="flex items-center gap-2 text-lg">
-            <Shield className="h-5 w-5" />
-            IP 화이트리스트
-          </CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <Shield className="h-5 w-5" />
+              IP 화이트리스트
+            </CardTitle>
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-gray-500">{ipWhitelistEnabled ? '활성' : '비활성'}</span>
+              <Switch
+                checked={ipWhitelistEnabled}
+                onCheckedChange={() => toggleWhitelist()}
+                disabled={isToggling}
+              />
+            </div>
+          </div>
           <p className="text-sm text-gray-500">
-            등록된 IP만 백오피스에 접근할 수 있습니다. 비어있으면 제한 없이 접근 가능합니다.
+            활성화하면 등록된 IP만 백오피스에 접근할 수 있습니다.
           </p>
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
             {ipWhitelist.length > 0 ? (
               <div className="border rounded-lg divide-y">
-                {ipWhitelist.map((ip, i) => (
-                  <div key={i} className="flex items-center justify-between px-4 py-2">
-                    <span className="font-mono text-sm">{ip}</span>
+                {ipWhitelist.map((entry) => (
+                  <div key={entry.ip} className="flex items-center justify-between px-4 py-2">
+                    <div>
+                      <span className="font-mono text-sm">{entry.ip}</span>
+                      {entry.description && (
+                        <span className="ml-2 text-xs text-gray-400">({entry.description})</span>
+                      )}
+                    </div>
                     <Button
                       variant="ghost"
                       size="sm"
                       className="text-red-500 hover:text-red-700"
-                      onClick={() => handleRemoveIp(i)}
-                      disabled={isPending}
+                      onClick={() => handleRemoveIp(entry.ip)}
+                      disabled={isRemovingIp}
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>
@@ -173,7 +212,7 @@ export const SettingsPage: FC = () => {
                 ))}
               </div>
             ) : (
-              <p className="text-sm text-gray-400 py-2">등록된 IP가 없습니다. (전체 허용)</p>
+              <p className="text-sm text-gray-400 py-2">등록된 IP가 없습니다.</p>
             )}
             <div className="flex items-center gap-2">
               <Input
@@ -183,11 +222,84 @@ export const SettingsPage: FC = () => {
                 className="font-mono max-w-xs"
                 onKeyDown={(e) => e.key === 'Enter' && handleAddIp()}
               />
+              <Input
+                value={ipDescription}
+                onChange={(e) => setIpDescription(e.target.value)}
+                placeholder="설명 (선택)"
+                className="max-w-[200px]"
+              />
               <Button
                 variant="outline"
                 size="sm"
                 onClick={handleAddIp}
-                disabled={!newIp.trim() || isPending}
+                disabled={!newIp.trim() || isAddingIp}
+              >
+                <Plus className="h-4 w-4 mr-1" />
+                추가
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* 회원 그룹 관리 */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <Users className="h-5 w-5" />
+            회원 그룹 관리
+          </CardTitle>
+          <p className="text-sm text-gray-500">
+            메시지/티켓 발송 대상으로 사용할 회원 그룹을 관리합니다.
+          </p>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-3">
+            {groups.length > 0 ? (
+              <div className="border rounded-lg divide-y">
+                {groups.map((group: any) => (
+                  <div key={group.id} className="flex items-center justify-between px-4 py-2">
+                    <div>
+                      <span className="text-sm font-medium">{group.title}</span>
+                      {group.description && (
+                        <span className="ml-2 text-xs text-gray-400">({group.description})</span>
+                      )}
+                      <span className="ml-2 text-xs text-blue-500">{group.count}명</span>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-red-500 hover:text-red-700"
+                      onClick={() => handleDeleteGroup(String(group.id), group.title)}
+                      disabled={isDeletingGroup}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-gray-400 py-2">등록된 그룹이 없습니다.</p>
+            )}
+            <div className="flex items-center gap-2">
+              <Input
+                value={newGroupTitle}
+                onChange={(e) => setNewGroupTitle(e.target.value)}
+                placeholder="그룹 이름"
+                className="max-w-[200px]"
+                onKeyDown={(e) => e.key === 'Enter' && handleCreateGroup()}
+              />
+              <Input
+                value={newGroupDesc}
+                onChange={(e) => setNewGroupDesc(e.target.value)}
+                placeholder="설명 (선택)"
+                className="max-w-[200px]"
+              />
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleCreateGroup}
+                disabled={!newGroupTitle.trim() || isCreatingGroup}
               >
                 <Plus className="h-4 w-4 mr-1" />
                 추가

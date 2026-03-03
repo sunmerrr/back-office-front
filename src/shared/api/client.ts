@@ -9,9 +9,6 @@ export const apiClient = ky.create({
     methods: ['get', 'put', 'head', 'delete', 'options', 'trace'],
     statusCodes: [408, 413, 429, 500, 502, 503, 504],
   },
-  headers: {
-    'Content-Type': 'application/json',
-  },
   hooks: {
     beforeRequest: [
       async (request) => {
@@ -21,12 +18,12 @@ export const apiClient = ky.create({
     beforeError: [
       async (error) => {
         const { response } = error
-        
+
         if (response) {
           const body = (await response.json().catch(() => ({}))) as { message?: string }
           error.message = body.message || error.message || 'An error occurred'
         }
-        
+
         return error
       },
     ],

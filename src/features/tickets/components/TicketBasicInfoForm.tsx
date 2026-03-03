@@ -28,6 +28,8 @@ interface TicketBasicInfoFormProps {
   onCancel: () => void
   onDelete?: () => void
   disabledFields?: ('category' | 'value')[]
+  submitLabel?: string
+  isSubmitDisabled?: boolean
 }
 
 export const TicketBasicInfoForm = ({
@@ -36,6 +38,8 @@ export const TicketBasicInfoForm = ({
   onCancel,
   onDelete,
   disabledFields = [],
+  submitLabel = '다음',
+  isSubmitDisabled = false,
 }: TicketBasicInfoFormProps) => {
   const form = useForm({
     defaultValues: {
@@ -251,8 +255,8 @@ export const TicketBasicInfoForm = ({
           <form.Subscribe
             selector={(state) => [state.canSubmit, state.isSubmitting]}
             children={([canSubmit, isSubmitting]) => (
-              <Button type="submit" disabled={!canSubmit}>
-                {isSubmitting ? '...' : '다음'}
+              <Button type="submit" disabled={!canSubmit || isSubmitDisabled}>
+                {isSubmitting ? '...' : submitLabel}
               </Button>
             )}
           />

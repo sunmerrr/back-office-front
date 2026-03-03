@@ -161,4 +161,29 @@ export const usersApi = {
       createdAt: item.createdAt,
     }))
   },
+
+  // ── Memo ──
+
+  getMemo: async (userId: string): Promise<{ userId: string; content: string; updatedAt: string | null }> => {
+    const res: any = await authenticatedApiClient.get(`user/${userId}/memo`).json()
+    return {
+      userId: String(res.userId),
+      content: res.content || '',
+      updatedAt: res.updatedAt || null,
+    }
+  },
+
+  saveMemo: async (userId: string, content: string): Promise<void> => {
+    return authenticatedApiClient.put(`user/${userId}/memo`, { json: { content } }).json()
+  },
+
+  // ── Overview ──
+
+  getUserOverview: async (userId: string): Promise<{
+    totalPaymentAmount: string
+    ticketGrantCount: number
+    goldLogCount: number
+  }> => {
+    return authenticatedApiClient.get(`user/${userId}/overview`).json()
+  },
 }

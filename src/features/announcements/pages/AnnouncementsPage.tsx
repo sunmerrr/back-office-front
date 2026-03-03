@@ -34,7 +34,7 @@ import {
 import { CreateAnnouncementDialog } from '../components/CreateAnnouncementDialog'
 import { EditAnnouncementDialog } from '../components/EditAnnouncementDialog'
 import type { Announcement, AnnouncementType, AnnouncementStatus, CreateAnnouncementData } from '../types'
-import { Pencil, Trash2, EyeOff, Plus } from 'lucide-react'
+import { Trash2, EyeOff, Plus } from 'lucide-react'
 
 const TYPE_OPTIONS = [
   { value: 'all', label: '전체' },
@@ -213,7 +213,7 @@ export const AnnouncementsPage: FC = () => {
               </TableRow>
             ) : (
               data?.items.map((a) => (
-                <TableRow key={a.id}>
+                <TableRow key={a.id} className="cursor-pointer hover:bg-muted/50" onClick={() => handleEdit(a)}>
                   <TableCell className="text-center font-medium">{a.id}</TableCell>
                   <TableCell className="text-center">
                     <span className="inline-flex items-center rounded-md bg-gray-50 px-2 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10">
@@ -229,16 +229,8 @@ export const AnnouncementsPage: FC = () => {
                   <TableCell className="text-center text-sm">{a.sortOrder}</TableCell>
                   <TableCell className="text-center text-sm">{formatDate(a.startAt)}</TableCell>
                   <TableCell className="text-center text-sm">{formatDate(a.endAt)}</TableCell>
-                  <TableCell className="text-center">
+                  <TableCell className="text-center" onClick={(e) => e.stopPropagation()}>
                     <div className="flex items-center justify-center gap-1">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleEdit(a)}
-                        title="수정"
-                      >
-                        <Pencil className="h-4 w-4" />
-                      </Button>
                       {(a.status === 'ACTIVE' || a.status === 'SCHEDULED') && (
                         <Button
                           variant="ghost"

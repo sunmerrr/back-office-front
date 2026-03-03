@@ -88,11 +88,12 @@ export const useUpdateTicket = () => {
 
 export const useSendTicket = () => {
   return useMutation({
-    mutationFn: (data: { 
-      ticket: string; 
-      groups?: string[]; 
-      specificUser?: string; 
-      all: boolean; 
+    mutationFn: (data: {
+      ticket: string;
+      groups?: string[];
+      specificUser?: string;
+      userIds?: string[];
+      all: boolean;
       scheduledTimestamp: number;
     }) => ticketsApi.sendTicket(data),
   })

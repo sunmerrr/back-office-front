@@ -58,4 +58,13 @@ export const shopApi = {
     const raw: any = await authenticatedApiClient.patch(`shop/products/${id}/toggle`).json()
     return mapProduct(raw)
   },
+
+  uploadImage: async (file: File): Promise<{ url: string }> => {
+    const formData = new FormData()
+    formData.append('file', file)
+    const response: any = await authenticatedApiClient.post('images/upload', {
+      body: formData,
+}).json()
+    return { url: response.url || '' }
+  },
 }

@@ -40,7 +40,7 @@ import { EditTournamentDialog } from '../components/EditTournamentDialog'
 import { TournamentDetailDialog } from '../components/TournamentDetailDialog'
 import { CancelTournamentDialog } from '../components/CancelTournamentDialog'
 import type { Tournament, CreateTournamentData } from '../types'
-import { Pencil, Trash2, XCircle, Eye, Plus, Copy } from 'lucide-react'
+import { Trash2, XCircle, Plus, Copy } from 'lucide-react'
 
 const STATUS_OPTIONS = [
   { value: 'all', label: '전체' },
@@ -100,11 +100,6 @@ export const TournamentsPage: FC = () => {
       { id: selectedTournament.id, data: updateData },
       { onSuccess: () => setEditOpen(false) },
     )
-  }
-
-  const handleDetail = (tournament: Tournament) => {
-    setSelectedTournament(tournament)
-    setDetailOpen(true)
   }
 
   const handleDelete = (tournament: Tournament) => {
@@ -198,16 +193,9 @@ export const TournamentsPage: FC = () => {
               </TableRow>
             ) : (
               data?.items.map((t) => (
-                <TableRow key={t.id}>
+                <TableRow key={t.id} className="cursor-pointer hover:bg-muted/50" onClick={() => handleEdit(t)}>
                   <TableCell className="text-center font-medium">{t.id}</TableCell>
-                  <TableCell>
-                    <button
-                      className="text-left font-medium text-blue-600 hover:underline"
-                      onClick={() => handleDetail(t)}
-                    >
-                      {t.name}
-                    </button>
-                  </TableCell>
+                  <TableCell className="font-medium">{t.name}</TableCell>
                   <TableCell className="text-center">
                     <TournamentStatusBadge status={t.status} />
                   </TableCell>
@@ -219,16 +207,8 @@ export const TournamentsPage: FC = () => {
                   </TableCell>
                   <TableCell className="text-center text-sm">{formatDate(t.startDate)}</TableCell>
                   <TableCell className="text-center text-sm">{formatDate(t.endDate)}</TableCell>
-                  <TableCell className="text-center">
+                  <TableCell className="text-center" onClick={(e) => e.stopPropagation()}>
                     <div className="flex items-center justify-center gap-1">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleDetail(t)}
-                        title="상세"
-                      >
-                        <Eye className="h-4 w-4" />
-                      </Button>
                       <Button
                         variant="ghost"
                         size="sm"
@@ -239,25 +219,15 @@ export const TournamentsPage: FC = () => {
                         <Copy className="h-4 w-4" />
                       </Button>
                       {(t.status === 'upcoming' || t.status === 'ongoing') && (
-                        <>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleEdit(t)}
-                            title="수정"
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                            onClick={() => handleCancelOpen(t)}
-                            title="취소"
-                          >
-                            <XCircle className="h-4 w-4" />
-                          </Button>
-                        </>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                          onClick={() => handleCancelOpen(t)}
+                          title="취소"
+                        >
+                          <XCircle className="h-4 w-4" />
+                        </Button>
                       )}
                       {t.status === 'upcoming' && (
                         <Button

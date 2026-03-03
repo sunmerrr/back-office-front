@@ -30,9 +30,12 @@ import { Button } from '@/shared/components/ui/button'
 import { Label } from '@/shared/components/ui/label'
 import { Badge } from '@/shared/components/ui/badge'
 import { Checkbox } from '@/shared/components/ui/checkbox'
+import { Textarea } from '@/shared/components/ui/textarea'
 import { DateTimePicker } from '@/shared/components/ui/date-time-picker'
 import type { UserGroup } from '@/features/users/types'
 import { DATE_PRESETS } from '@/shared/constants/date-presets'
+
+type TargetType = 'all' | 'group' | 'uid'
 
 interface GrantTicketDialogProps {
   open: boolean
@@ -42,11 +45,18 @@ interface GrantTicketDialogProps {
 
 export const GrantTicketDialog = ({ open, onOpenChange, ticketId }: GrantTicketDialogProps) => {
   const [selectedGroups, setSelectedGroups] = useState<UserGroup[]>([])
-  const [isAllUsers, setIsAllUsers] = useState(false)
+  const [targetType, setTargetType] = useState<TargetType>('all')
+  const [uidInput, setUidInput] = useState('')
   const [scheduledDate, setScheduledDate] = useState<Date | undefined>(new Date())
   const [openCombobox, setOpenCombobox] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
   const debouncedSearchTerm = useDebounce(searchTerm, 300)
+
+  const parsedUids = uidInput
+    .split(/[,\n]+/)
+    .map((s) => s.trim())
+    .filter(Boolean)
+  const uidCount = parsedUids.length
 
   const { data: ticket, isLoading } = useTicket(ticketId || '')
   const { mutate: sendTicket, isPending } = useSendTicket()
@@ -69,23 +79,29 @@ export const GrantTicketDialog = ({ open, onOpenChange, ticketId }: GrantTicketD
 
   const handleSend = () => {
     if (!ticketId) return
-    if (!isAllUsers && selectedGroups.length === 0) {
-      alert('대상 그룹을 선택하거나 전원 발송을 체크해주세요.')
+    if (targetType === 'group' && selectedGroups.length === 0) {
+      alert('대상 그룹을 선택해주세요.')
+      return
+    }
+    if (targetType === 'uid' && uidCount === 0) {
+      alert('UID를 최소 1개 이상 입력해주세요.')
       return
     }
 
     sendTicket({
       ticket: ticketId,
-      groups: isAllUsers ? [] : selectedGroups.map(g => g.id),
-      specificUser: "", 
-      all: isAllUsers,
+      groups: targetType === 'group' ? selectedGroups.map(g => g.id) : [],
+      specificUser: "",
+      userIds: targetType === 'uid' ? parsedUids : undefined,
+      all: targetType === 'all',
       scheduledTimestamp: scheduledDate ? scheduledDate.getTime() : Date.now(),
     }, {
       onSuccess: () => {
         alert('티켓이 성공적으로 발송되었습니다.')
         onOpenChange(false)
         setSelectedGroups([])
-        setIsAllUsers(false)
+        setTargetType('all')
+        setUidInput('')
         setScheduledDate(new Date())
       },
       onError: async (err: unknown) => {
@@ -137,24 +153,60 @@ export const GrantTicketDialog = ({ open, onOpenChange, ticketId }: GrantTicketD
               </div>
             </div>
 
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label className="text-right">발송 범위</Label>
-              <div className="col-span-3 flex items-center space-x-2">
-                <Checkbox 
-                  id="all-users" 
-                  checked={isAllUsers} 
-                  onCheckedChange={(checked) => setIsAllUsers(!!checked)} 
-                />
-                <label 
-                  htmlFor="all-users" 
-                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                >
-                  서비스 전체 사용자에게 발송
-                </label>
+            <div className="grid grid-cols-4 items-start gap-4">
+              <Label className="text-right pt-2">발송 대상</Label>
+              <div className="col-span-3 space-y-2">
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="target-all"
+                    checked={targetType === 'all'}
+                    onCheckedChange={(checked) => checked && setTargetType('all')}
+                  />
+                  <label htmlFor="target-all" className="text-sm font-medium leading-none cursor-pointer">
+                    전체 사용자
+                  </label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="target-group"
+                    checked={targetType === 'group'}
+                    onCheckedChange={(checked) => checked && setTargetType('group')}
+                  />
+                  <label htmlFor="target-group" className="text-sm font-medium leading-none cursor-pointer">
+                    그룹 선택
+                  </label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="target-uid"
+                    checked={targetType === 'uid'}
+                    onCheckedChange={(checked) => checked && setTargetType('uid')}
+                  />
+                  <label htmlFor="target-uid" className="text-sm font-medium leading-none cursor-pointer">
+                    UID 직접 입력
+                  </label>
+                </div>
               </div>
             </div>
-            
-            {!isAllUsers && (
+
+            {targetType === 'uid' && (
+              <div className="grid grid-cols-4 items-start gap-4">
+                <Label className="text-right pt-3">UID 목록</Label>
+                <div className="col-span-3 space-y-2">
+                  <Textarea
+                    value={uidInput}
+                    onChange={(e) => setUidInput(e.target.value)}
+                    placeholder="UID를 쉼표 또는 줄바꿈으로 구분하여 입력&#10;예: 1001, 1002, 1003"
+                    rows={4}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    입력된 UID: <span className="font-medium text-blue-600">{uidCount}건</span>
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {targetType === 'group' && (
               <div className="grid grid-cols-4 items-start gap-4">
                 <Label className="text-right pt-3">대상 그룹</Label>
                 <div className="col-span-3 flex flex-col gap-2">
@@ -246,7 +298,7 @@ export const GrantTicketDialog = ({ open, onOpenChange, ticketId }: GrantTicketD
           <Button variant="outline" onClick={() => onOpenChange(false)}>취소</Button>
           <Button 
             onClick={handleSend} 
-            disabled={isPending || !ticketId || (!isAllUsers && selectedGroups.length === 0)}
+            disabled={isPending || !ticketId || (targetType === 'group' && selectedGroups.length === 0) || (targetType === 'uid' && uidCount === 0)}
             className="bg-blue-600 hover:bg-blue-700 text-white"
           >
             {isPending ? '발송 중...' : '티켓 발급 확정'}

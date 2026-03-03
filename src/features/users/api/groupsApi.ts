@@ -17,4 +17,16 @@ export const groupsApi = {
 
     return authenticatedApiClient.get('group', { searchParams }).json()
   },
+
+  createGroup: async (data: { title: string; description?: string }): Promise<UserGroup> => {
+    return authenticatedApiClient.post('group', { json: data }).json()
+  },
+
+  updateGroup: async (id: string, data: { title?: string; description?: string }): Promise<UserGroup> => {
+    return authenticatedApiClient.patch(`group/${id}`, { json: data }).json()
+  },
+
+  deleteGroup: async (id: string): Promise<void> => {
+    return authenticatedApiClient.delete(`group/${id}`).json()
+  },
 }
